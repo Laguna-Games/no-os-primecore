@@ -1,0 +1,23 @@
+{
+    "arrowParens": "always",
+    "bracketSameLine": true,
+    "bracketSpacing": false,
+    "explicitTypes": "always",
+    "overrides": [
+        {
+            "files": "*.sol",
+            "options": {
+                "plugins": [
+                    "prettier-plugin-solidity"
+                ]
+            }
+        }
+    ],
+    "printWidth": 120,
+    "proseWrap": "never",
+    "quoteProps": "consistent",
+    "semi": false,
+    "singleQuote": true,
+    "tabWidth": 4,
+    "trailingComma": "es5"
+}

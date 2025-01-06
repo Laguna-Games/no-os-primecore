@@ -1,0 +1,23 @@
+# ==============================================================================
+#  Save a copy of this file named `.env`
+# ==============================================================================
+
+DEPLOYER_ADDRESS="<wallet signing address, add to cast wallet first>"
+
+# BLOCKCHAIN RPC PROVIDERS
+ETHEREUM_RPC="https://mainnet.infura.io/v3/"
+SEPOLIA_RPC="https://ethereum-sepolia.publicnode.com"
+BASE_RPC="https://rpc.ankr.com/base"
+POLYGON_RPC="https://polygon-rpc.com"
+XAI_MAINNET_RPC="https://xai-chain.net/rpc"
+XAI_SEPOLIA_RPC="https://testnet-v2.xai-chain.net/rpc"
+ARB_SEPOLIA_RPC="https://sepolia-rollup.arbitrum.io/rpc"
+
+# BLOCK EXPLORER API KEYS
+ETHERSCAN_API_KEY="<ETHERSCAN_API_KEY>"
+SEPOLIASCAN_API_KEY="<SEPOLIASCAN_API_KEY>"
+BASESCAN_API_KEY="<BASE_API_KEY>"
+POLYGONSCAN_API_KEY="<POLYGONSCAN_API_KEY>"
+XAI_BLOCKSCOUT_API_KEY="<XAI_BLOCKSCOUT_API_KEY>"
+XAI_SEPOLIA_BLOCKSCOUT_API_KEY="<XAI_SEPOLIA_BLOCKSCOUT_API_KEY>"
+ARBITRUM_SEPOLIA_API_KEY="<ARBITRUM_SEPOLIA_API_KEY>"
