@@ -1,0 +1,3 @@
+[submodule "lib/laguna-diamond-foundry"]
+	path = lib/laguna-diamond-foundry
+	url = https://github.com/Laguna-Games/laguna-diamond-foundry
