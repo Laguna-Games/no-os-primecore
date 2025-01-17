@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.19;
 
 /// @title DN404
 /// @notice DN404 is a hybrid ERC20 and ERC721 implementation that mints
@@ -123,6 +123,13 @@ contract DN404Facet {
         return LibDN404._getDN404Storage().mirrorERC721;
     }
 
+    /// @notice Transfers an NFT from `from` to `to`.
+    /// @dev This function is invoked by `transferFrom` in the Mirror contract.
+    /// @param from The address of the sender.
+    /// @param to The address of the recipient.
+    /// @param id The ID of the NFT.
+    /// @param msgSender The address of the caller.
+    /// @return true
     function transferFromNFT(address from, address to, uint256 id, address msgSender) public returns (bool) {
         LibDN404.DN404Storage storage $ = LibDN404._getDN404Storage();
         if ($.mirrorERC721 != msg.sender) revert LibDN404.SenderNotMirror();
@@ -130,6 +137,12 @@ contract DN404Facet {
         return true;
     }
 
+    /// @notice Sets whether `operator` is approved to manage the NFT tokens of the caller.
+    /// @dev This function is invoked by `setApprovalForAll` in the Mirror contract.
+    /// @param spender The address to approve.
+    /// @param status Whether `operator` is approved to manage the NFT tokens of the caller.
+    /// @param msgSender The address of the caller.
+    /// @return true
     function setApprovalForAllNFT(address spender, bool status, address msgSender) public returns (bool) {
         LibDN404.DN404Storage storage $ = LibDN404._getDN404Storage();
         if ($.mirrorERC721 != msg.sender) revert LibDN404.SenderNotMirror();
@@ -137,36 +150,71 @@ contract DN404Facet {
         return true;
     }
 
+    /// @notice Returns whether `operator` is approved to manage the NFT tokens of `owner`.
+    /// @dev This function is invoked by `isApprovedForAll` in the Mirror contract.
+    /// @param owner The address of the owner.
+    /// @param operator The address of the operator.
+    /// @return status Whether `operator` is approved to manage the NFT tokens of `owner`.
     function isApprovedForAllNFT(address owner, address operator) public view returns (bool) {
         return LibDN404._isApprovedForAll(owner, operator);
     }
 
+    /// @notice Returns the owner of the NFT with the given tokenId, reverts if the NFT does not exist.
+    /// @dev This function is invoked by `ownerOf` in the Mirror contract.
+    /// @param id The ID of the NFT.
+    /// @return owner The owner of the NFT.
     function ownerOfNFT(uint256 id) public view returns (address) {
         return LibDN404._ownerOf(id);
     }
 
+    /// @notice Returns the owner of the NFT with the given tokenId, returns zero address if the NFT does not exist.
+    /// @dev This function is invoked by `ownerAt` in the Mirror contract.
+    /// @param id The ID of the NFT.
+    /// @return owner The owner of the NFT.
     function ownerAtNFT(uint256 id) public view returns (address) {
         return LibDN404._ownerAt(id);
     }
 
+    /// @notice Approves an address to manage a given NFT.
+    /// @dev This function is invoked by `approve` in the Mirror contract.
+    /// @param spender The address to approve.
+    /// @param id The ID of the NFT.
+    /// @param msgSender The address of the caller.
+    /// @return owner The owner of the NFT.
     function approveNFT(address spender, uint256 id, address msgSender) public returns (address owner) {
         LibDN404.DN404Storage storage $ = LibDN404._getDN404Storage();
         if ($.mirrorERC721 != msg.sender) revert LibDN404.SenderNotMirror();
         return LibDN404._approveNFT(spender, id, msgSender);
     }
 
+    /// @notice Returns the approved address for a given NFT.
+    /// @dev This function is invoked by `getApproved` in the Mirror contract.
+    /// @param id The ID of the NFT.
+    /// @return approved The approved address for the NFT.
     function getApprovedNFT(uint256 id) public view returns (address) {
         return LibDN404._getApproved(id);
     }
 
+    /// @notice Returns the balance of NFTs owned by `owner`.
+    /// @dev This function is invoked by `balanceOf` in the Mirror contract.
+    /// @param owner The address of the owner.
+    /// @return balance The balance of NFTs owned by `owner`.
     function balanceOfNFT(address owner) public view returns (uint256) {
         return LibDN404._balanceOfNFT(owner);
     }
 
+    /// @notice Returns the total number of NFTs in existence.
+    /// @dev This function is invoked by `totalSupply` in the Mirror contract.
+    /// @return totalSupply The total number of NFTs.
     function totalNFTSupply() public view returns (uint256) {
         return LibDN404._totalNFTSupply();
     }
 
+    /// @notice Returns the tokenId of the NFT owned by `owner` at `index`.
+    /// @dev This function is invoked by `tokenOfOwnerByIndex` in the Mirror contract.
+    /// @param owner The address of the owner.
+    /// @param index The index of the NFT.
+    /// @return tokenId The tokenId of the NFT.
     function tokenOfNFTOwnerByIndex(address owner, uint256 index) public view returns (uint256 tokenId) {
         uint256 balance = balanceOfNFT(owner);
         require(index < balance, 'DN404: index out of bounds');
@@ -175,6 +223,10 @@ contract DN404Facet {
         require(tokenId != 0, 'DN404: no token at index');
         return tokenId;
     }
+
+    /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
+    /*                     REROLL OPERATION                      */
+    /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
 
     /// @dev Rerolls the NFT with the given tokenId and slippage tolerance.
     /// @param tokenId The ID of the NFT to reroll.

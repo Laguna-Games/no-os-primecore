@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+/// @title LibTokenURI
+/// @author Shiva (shiva.shanmuganathan@laguna.games)
+/// @notice Library for generating token URIs for Primecore tokens
+
 import {Base64} from '../../lib/openzeppelin-contracts/contracts/utils/Base64.sol';
 import {Strings} from '../../lib/openzeppelin-contracts/contracts/utils/Strings.sol';
 import {LibDN404} from './LibDN404.sol';
 
 library LibTokenURI {
+    /// @notice Struct for storing Primecore data in JSON format
     struct JSONPrimecoreData {
         string tokenId;
         string name;
@@ -17,6 +22,9 @@ library LibTokenURI {
         string elementSlot3;
     }
 
+    /// @notice Gets the JSON ready Primecore data
+    /// @param tokenId The token ID.
+    /// @return The JSON ready Primecore data.
     function getJSONReadyPrimecoreData(uint256 tokenId) internal view returns (JSONPrimecoreData memory) {
         (
             uint8 rarityTier,
@@ -32,13 +40,16 @@ library LibTokenURI {
                 'Primecore',
                 getRarityName(rarityTier),
                 Strings.toString(luck),
-                Strings.toString(prodType),
+                getProductionName(prodType),
                 getElementName(elementSlot1),
                 getElementName(elementSlot2),
                 getElementName(elementSlot3)
             );
     }
 
+    /// @notice Generates the token URI for a Primecore token
+    /// @param tokenId The token ID.
+    /// @return The token URI.
     function generateTokenURI(uint256 tokenId) internal view returns (string memory) {
         JSONPrimecoreData memory primecoreData = getJSONReadyPrimecoreData(tokenId);
         bytes memory json = abi.encodePacked(
@@ -52,7 +63,7 @@ library LibTokenURI {
             primecoreData.rarity,
             '"},{"trait_type":"Luck","display_type":"number","value":"',
             primecoreData.luck,
-            '"},{"trait_type":"Production","display_type":"number","value":"',
+            '"},{"trait_type":"Production","value":"',
             primecoreData.production,
             '"},{"trait_type":"Element 1","value":"',
             primecoreData.elementSlot1,
@@ -66,6 +77,9 @@ library LibTokenURI {
         return string(abi.encodePacked('data:application/json;base64,', Base64.encode(json)));
     }
 
+    /// @notice Gets the element name from the element ID
+    /// @param element The element ID.
+    /// @return The element name.
     function getElementName(uint8 element) internal pure returns (string memory) {
         if (element == 1) {
             return 'Fire';
@@ -79,6 +93,9 @@ library LibTokenURI {
         return 'None';
     }
 
+    /// @notice Gets the rarity name from the rarity ID
+    /// @param rarity The rarity ID.
+    /// @return The rarity name.
     function getRarityName(uint8 rarity) internal pure returns (string memory) {
         if (rarity == 1) {
             return 'Common';
@@ -94,6 +111,25 @@ library LibTokenURI {
         }
         if (rarity == 5) {
             return 'Mythic';
+        }
+        return 'None';
+    }
+
+    function getProductionName(uint8 production) internal pure returns (string memory) {
+        if (production == 1) {
+            return 'Hydrosteel';
+        }
+        if (production == 2) {
+            return 'Terraglass';
+        }
+        if (production == 3) {
+            return 'Firestone';
+        }
+        if (production == 4) {
+            return 'Kronosite';
+        }
+        if (production == 5) {
+            return 'Celestium';
         }
         return 'None';
     }

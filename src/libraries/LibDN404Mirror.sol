@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
-
-import {LibContractOwner} from '../../lib/laguna-diamond-foundry/src/libraries/LibContractOwner.sol';
-
+pragma solidity ^0.8.19;
 /// @title LibDN404Mirror
+/// @author Shiva (shiva.shanmuganathan@laguna.games)
 /// @notice Adapted from https://github.com/Vectorized/dn404
 /// @custom:storage-location uint72(bytes9(keccak256("DN404_MIRROR_STORAGE")))
+import {LibContractOwner} from '../../lib/laguna-diamond-foundry/src/libraries/LibContractOwner.sol';
+
 library LibDN404Mirror {
     /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
     /*                           EVENTS                           */

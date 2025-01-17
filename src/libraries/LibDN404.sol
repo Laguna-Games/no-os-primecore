@@ -1,18 +1,21 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.19;
+
+/// @title LibDN404
+/// @author Shiva (shiva.shanmuganathan@laguna.games)
+/// @notice Adapted from https://github.com/Vectorized/dn404
+/// @custom:storage-location uint72(bytes9(keccak256("DN404_STORAGE")))
 
 import {LibRNG} from './LibRNG.sol';
 import {Strings} from '../../lib/openzeppelin-contracts/contracts/utils/Strings.sol';
 import {IERC20} from '../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
-// Uniswap V3 Core
-import {IUniswapV3Factory} from '../../lib/v3-core/contracts/interfaces/IUniswapV3Factory.sol';
-import {IUniswapV3Pool} from '../../lib/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
+// Uniswap V3 Core and Periphery
 import {FullMath} from '../../lib/v3-core/contracts/libraries/FullMath.sol';
 import {ISwapRouter} from '../../lib/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 import {IQuoter} from '../../lib/v3-periphery/contracts/interfaces/IQuoter.sol';
 
 // WETH Interface
-/// @title Interface for WETH9
+/// @title Interface for WETH
 interface IWETH is IERC20 {
     /// @notice Deposit ether to get wrapped ether
     function deposit() external payable;
@@ -21,9 +24,6 @@ interface IWETH is IERC20 {
     function withdraw(uint256) external;
 }
 
-/// @title LibDN404
-/// @notice Adapted from https://github.com/Vectorized/dn404
-/// @custom:storage-location uint72(bytes9(keccak256("DN404_STORAGE")))
 library LibDN404 {
     /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
     /*                           EVENTS                           */
@@ -287,9 +287,10 @@ library LibDN404 {
         address treasuryAddress; // Address to receive treasury fees
         uint24 poolFeeTier; // Fee tier for the pool
         address poolAddress; // Address of the pool
-        bool rerollLocked; // Add this line
+        bool rerollLocked; // Reroll reentrancy guard lock
     }
 
+    /// @dev Struct to store primecore data
     struct PrimecoreData {
         RarityTier rarityTier;
         uint16 luck;
@@ -302,6 +303,7 @@ library LibDN404 {
         uint8 lastNameIdx;
     }
 
+    /// @dev Enum to store production type
     enum ProductionType {
         NONE,
         HYDROSTEEL,
@@ -311,6 +313,7 @@ library LibDN404 {
         CELESTIUM
     }
 
+    /// @dev Enum to store element type
     enum ElementType {
         NONE,
         FIRE,
@@ -318,6 +321,7 @@ library LibDN404 {
         EARTH
     }
 
+    /// @dev Enum to store rarity tier
     enum RarityTier {
         NONE,
         COMMON,
@@ -1135,6 +1139,10 @@ library LibDN404 {
         _getDN404Storage().addressData[owner].aux = value;
     }
 
+    /// @dev Moves token `tokenId` to the last index in the owner's token array.
+    /// @param owner The owner of the token.
+    /// @param tokenId The ID of the token to move.
+    /// @return True
     function _moveTokenToLastIndex(address owner, uint256 tokenId) internal returns (bool) {
         DN404Storage storage $ = _getDN404Storage();
         AddressData storage ownerData = $.addressData[owner];
@@ -1778,6 +1786,11 @@ library LibDN404 {
         }
     }
 
+    /// @notice Returns the token IDs owned by `owner`.
+    /// @param owner The owner of the tokens.
+    /// @param begin The starting index of the batch.
+    /// @param batchSize The size of the batch.
+    /// @return The token IDs owned by `owner`.
     function getUserNFTsBatch(
         address owner,
         uint256 begin,
@@ -1795,6 +1808,14 @@ library LibDN404 {
     /*                 DN404 METADATA GETTER FUNCTIONS            */
     /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
 
+    /// @notice Returns the primecore data for a token.
+    /// @param tokenId The ID of the token.
+    /// @return rarityTier The rarity tier of the token.
+    /// @return luck The luck of the token.
+    /// @return prodType The production type of the token.
+    /// @return elementSlot1 The first element slot of the token.
+    /// @return elementSlot2 The second element slot of the token.
+    /// @return elementSlot3 The third element slot of the token.
     function getPrimecoreData(
         uint256 tokenId
     )
@@ -1818,7 +1839,8 @@ library LibDN404 {
         elementSlot3 = uint8($.tokenIdToPCData[tokenId].elementSlot3);
     }
 
-    /// @dev Adds an address to the whitelist
+    /// @notice Adds an address to the whitelist
+    /// @param account The address to add to the whitelist.
     function _addToWhitelist(address account) internal {
         DN404Storage storage $ = _getDN404Storage();
         if ($.whitelistedAddressIndex[account] == 0) {
@@ -1828,7 +1850,8 @@ library LibDN404 {
         }
     }
 
-    /// @dev Removes an address from the whitelist
+    /// @notice Removes an address from the whitelist
+    /// @param account The address to remove from the whitelist.
     function _removeFromWhitelist(address account) internal {
         DN404Storage storage $ = _getDN404Storage();
         uint256 index = $.whitelistedAddressIndex[account];
@@ -1842,42 +1865,53 @@ library LibDN404 {
         delete $.whitelistedAddressIndex[account];
     }
 
-    /// @dev Checks if an address is whitelisted
+    /// @notice Checks if an address is whitelisted
+    /// @param account The address to check.
+    /// @return True if the address is whitelisted, false otherwise.
     function _isWhitelisted(address account) internal view returns (bool) {
         return _getDN404Storage().whitelistedAddressIndex[account] != 0;
     }
 
-    /// @dev Returns all whitelisted addresses
+    /// @notice Returns all whitelisted addresses
+    /// @return The whitelisted addresses.
     function _getWhitelistedAddresses() internal view returns (address[] memory) {
         return _getDN404Storage().whitelistedAddressList;
     }
 
-    /// @dev Returns the number of whitelisted addresses
+    /// @notice Returns the number of whitelisted addresses
+    /// @return The number of whitelisted addresses.
     function _getWhitelistedAddressCount() internal view returns (uint256) {
         return _getDN404Storage().whitelistedAddressList.length;
     }
 
-    /// @dev Sets the Uniswap Router address and adds it to whitelist
+    /// @notice Sets the Uniswap Router address and adds it to whitelist
+    /// @param router The address of the Uniswap Router.
     function _setUniswapRouter(address router) internal {
         DN404Storage storage $ = _getDN404Storage();
         $.UniswapRouter = router;
     }
 
+    /// @notice Returns the Uniswap Router address
+    /// @return The Uniswap Router address.
     function _getUniswapRouter() internal view returns (address) {
         return _getDN404Storage().UniswapRouter;
     }
 
-    /// @dev Sets the base URI for token metadata
+    /// @notice Sets the base URI for token metadata
+    /// @param baseURI The base URI for token metadata.
     function _setBaseURI(string memory baseURI) internal {
         _getDN404Storage().baseURI = baseURI;
     }
 
-    /// @dev Gets the base URI for token metadata
+    /// @notice Gets the base URI for token metadata
+    /// @return The base URI for token metadata.
     function _getBaseURI() internal view returns (string memory) {
         return _getDN404Storage().baseURI;
     }
 
-    /// @dev Gets the complete image URI for a token based on its attributes
+    /// @notice Gets the complete image URI for a token based on its attributes
+    /// @param tokenId The ID of the token.
+    /// @return The complete image URI for the token.
     function _getImageURI(uint256 tokenId) internal view returns (string memory) {
         DN404Storage storage $ = _getDN404Storage();
 
@@ -1928,6 +1962,8 @@ library LibDN404 {
         return string(abi.encodePacked($.baseURI, imagePath));
     }
 
+    /// @notice Checks if the caller is an EOA
+    /// @return True if the caller is an EOA, false otherwise.
     function _isEOA() internal view returns (bool) {
         return msg.sender == tx.origin;
     }
@@ -1944,7 +1980,9 @@ library LibDN404 {
         return _getDN404Storage().rerollThreshold;
     }
 
-    /// @dev Roll for rarity tier with scaling buckets to maintain target distribution
+    /// @notice Roll for rarity tier with scaling buckets to maintain target distribution
+    /// @param randomness The randomness value for the roll.
+    /// @return The rarity tier (1-5).
     function _rollRarityTier(uint256 randomness) internal view returns (uint8) {
         DN404Storage storage $ = _getDN404Storage();
 
@@ -2190,35 +2228,51 @@ library LibDN404 {
         return excess;
     }
 
+    /// @notice Sets the treasury address
+    /// @param treasury The address of the treasury.
     function _setTreasuryAddress(address treasury) internal {
         _getDN404Storage().treasuryAddress = treasury;
     }
 
+    /// @notice Gets the treasury address
+    /// @return The address of the treasury.
     function _getTreasuryAddress() internal view returns (address) {
         return _getDN404Storage().treasuryAddress;
     }
 
+    /// @notice Sets the treasury fee percentage
+    /// @param treasuryFeePercentage The percentage of the treasury fee.
     function _setTreasuryFeePercentage(uint256 treasuryFeePercentage) internal {
         _getDN404Storage().treasuryFeePercentage = treasuryFeePercentage;
     }
 
+    /// @notice Gets the treasury fee percentage
+    /// @return The percentage of the treasury fee.
     function _getTreasuryFeePercentage() internal view returns (uint256) {
         return _getDN404Storage().treasuryFeePercentage;
     }
 
+    /// @notice Sets the pool fee tier
+    /// @param feeTier The fee tier.
     function _setPoolFeeTier(uint24 feeTier) internal {
         _getDN404Storage().poolFeeTier = feeTier;
     }
 
+    /// @notice Gets the pool fee tier
+    /// @return The fee tier.
     function _getPoolFeeTier() internal view returns (uint24) {
         return _getDN404Storage().poolFeeTier;
     }
 
+    /// @notice Sets the pool address
+    /// @param poolAddress The address of the pool.
     function _setPoolAddress(address poolAddress) internal {
         _getDN404Storage().poolAddress = poolAddress;
         _setSkipNFT(poolAddress, true);
     }
 
+    /// @notice Gets the pool address
+    /// @return The address of the pool.
     function _getPoolAddress() internal view returns (address) {
         return _getDN404Storage().poolAddress;
     }

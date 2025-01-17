@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.19;
 
 /// @title DN404Mirror
 /// @notice DN404Mirror provides an interface for interacting with the
@@ -168,14 +168,17 @@ contract DN404MirrorFacet {
         return LibDN404Mirror.baseERC20();
     }
 
+    /// @notice Logs a transfer of NFTs.
     function logTransfer(uint256[] calldata ids) public returns (bool) {
         return LibDN404Mirror.logTransfer(ids);
     }
 
+    /// @notice Logs a direct transfer of NFTs from `from` to `to`.
     function logDirectTransfer(address from, address to, uint256[] calldata ids) public returns (bool) {
         return LibDN404Mirror.logDirectTransfer(from, to, ids);
     }
 
+    /// @notice Links a mirror contract to the base DN404 contract.
     function linkMirrorContract(address base) public returns (bool) {
         return LibDN404Mirror.linkMirrorContract(base);
     }
