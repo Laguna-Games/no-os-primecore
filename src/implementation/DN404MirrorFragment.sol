@@ -20,7 +20,7 @@ contract DN404MirrorFragment {
     /// @dev The ownership is transferred from `oldOwner` to `newOwner`.
     /// This is for marketplace signaling purposes. This contract has a `pullOwner()`
     /// function that will sync the owner from the base contract.
-    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
+    // event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);  //  shadowed in DiamondOwnerFragment
 
     // /// @dev `keccak256(bytes("Transfer(address,address,uint256)"))`.
     // uint256 private constant _TRANSFER_EVENT_SIGNATURE =

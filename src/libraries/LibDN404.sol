@@ -406,7 +406,7 @@ library LibDN404 {
     /// @dev Amount of token balance that is equal to one NFT.
     ///
     /// Note: The return value MUST be kept constant after `_initializeDN404` is called.
-    function _unit() internal view returns (uint256) {
+    function _unit() internal pure returns (uint256) {
         return 10 ** 18;
     }
 
@@ -421,7 +421,7 @@ library LibDN404 {
 
     /// @dev Returns if direct NFT transfers should be used during ERC20 transfers
     /// whenever possible, instead of burning and re-minting.
-    function _useDirectTransfersIfPossible() internal view returns (bool) {
+    function _useDirectTransfersIfPossible() internal pure returns (bool) {
         return true;
     }
 
@@ -430,7 +430,7 @@ library LibDN404 {
     function _addToBurnedPool(
         uint256 totalNFTSupplyAfterBurn,
         uint256 totalSupplyAfterBurn
-    ) internal view returns (bool) {
+    ) internal pure returns (bool) {
         // Silence unused variable compiler warning.
         totalSupplyAfterBurn = totalNFTSupplyAfterBurn;
         return false;
@@ -442,7 +442,7 @@ library LibDN404 {
     /// and are expected to have nearly all possible NFTs materialized.
     ///
     /// Note: The returned value must be constant after initialization.
-    function _useExistsLookup() internal view returns (bool) {
+    function _useExistsLookup() internal pure returns (bool) {
         return true;
     }
 
@@ -456,6 +456,7 @@ library LibDN404 {
     /// @dev Hook that is called after a batch of NFT transfers.
     /// The lengths of `from`, `to`, and `ids` are guaranteed to be the same.
     function _afterNFTTransfers(address[] memory from, address[] memory to, uint256[] memory ids) internal {
+        (to); // noop
         DN404Storage storage $ = _getDN404Storage();
 
         for (uint256 i = 0; i < ids.length; i++) {
@@ -505,7 +506,7 @@ library LibDN404 {
 
     /// @dev Override this function to return true if `_afterNFTTransfers` is used.
     /// This is to help the compiler avoid producing dead bytecode.
-    function _useAfterNFTTransfers() internal returns (bool) {
+    function _useAfterNFTTransfers() internal pure returns (bool) {
         return true;
     }
 
@@ -520,7 +521,7 @@ library LibDN404 {
     /// Note: The returned value SHOULD be kept constant.
     /// If the returned value changes from false to true,
     /// it can override the user customized allowances for Permit2 to infinity.
-    function _givePermit2DefaultInfiniteAllowance() internal view returns (bool) {
+    function _givePermit2DefaultInfiniteAllowance() internal pure returns (bool) {
         return false;
     }
 
@@ -1489,7 +1490,7 @@ library LibDN404 {
     }
 
     /// @dev Returns whether `amount` is an invalid `totalSupply`.
-    function _totalSupplyOverflows(uint256 amount) internal view returns (bool result) {
+    function _totalSupplyOverflows(uint256 amount) internal pure returns (bool result) {
         uint256 unit = _unit();
         /// @solidity memory-safe-assembly
         assembly {
@@ -1996,7 +1997,7 @@ library LibDN404 {
         _moveTokenToLastIndex(owner, tokenId);
 
         // Execute swaps and collect fees
-        (uint256 ethReceived, uint256 treasuryFee, uint256 excess) = _executeRerollSwaps(
+        (, /*uint256 ethReceived*/ uint256 treasuryFee, uint256 excess) = _executeRerollSwaps(
             owner,
             rerollThreshold,
             slippageBps,

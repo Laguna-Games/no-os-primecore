@@ -76,6 +76,7 @@ library LibTokenURI {
         if (element == 3) {
             return 'Earth';
         }
+        return 'None';
     }
 
     function getRarityName(uint8 rarity) internal pure returns (string memory) {
@@ -91,6 +92,9 @@ library LibTokenURI {
         if (rarity == 4) {
             return 'Legendary';
         }
-        return 'Mythic';
+        if (rarity == 5) {
+            return 'Mythic';
+        }
+        return 'None';
     }
 }
