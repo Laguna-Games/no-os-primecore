@@ -58,7 +58,7 @@ gas_reports = ['*']
 evm_version = 'paris'
 
 # override for the solc version (setting this ignores `auto_detect_solc`)
-solc_version = '0.8.19'
+solc_version = '0.8.20'
 
 # enable auto-detection of the appropriate solc version to use
 auto_detect_solc = false
