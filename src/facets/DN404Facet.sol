@@ -182,6 +182,4 @@ contract DN404Facet {
     function reroll(uint256 tokenId, uint16 slippageBps) external payable {
         LibDN404._reroll(tokenId, slippageBps);
     }
-
-    // receive() external payable {}
 }
