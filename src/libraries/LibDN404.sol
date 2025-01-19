@@ -189,6 +189,21 @@ library LibDN404 {
     /// [Etherscan](https://etherscan.io/address/0x000000000022D473030F116dDEE9F6B43aC78BA3)
     address internal constant _PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
+    //  Goal number of common NFTs to be minted
+    uint16 internal constant TARGET_COMMON_COUNT = 4000;
+
+    //  Goal number of uncommon NFTs to be minted
+    uint16 internal constant TARGET_UNCOMMON_COUNT = 2500;
+
+    //  Goal number of rare NFTs to be minted
+    uint16 internal constant TARGET_RARE_COUNT = 1000;
+
+    //  Goal number of legendary NFTs to be minted
+    uint16 internal constant TARGET_LEGENDARY_COUNT = 200;
+
+    //  Goal number of mythic NFTs to be minted
+    uint16 internal constant TARGET_MYTHIC_COUNT = 77;
+
     /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
     /*                          STORAGE                           */
     /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
@@ -1986,32 +2001,64 @@ library LibDN404 {
     function _rollRarityTier(uint256 randomness) internal view returns (uint8) {
         DN404Storage storage $ = _getDN404Storage();
 
-        uint256[5] memory weights;
-        uint256 totalWeight;
-        uint16[5] memory targetCounts = [4000, 2500, 1000, 200, 77];
+        uint256 commonBucket;
+        uint256 uncommonBucket;
+        uint256 rareBucket;
+        uint256 legendaryBucket;
+        uint256 mythicBucket;
 
-        for (uint8 i = 0; i < 5; i++) {
-            uint16 currentCount = $.rarityTotalsByTier[i + 1];
-            // Cast to uint256 before multiplication to prevent overflow
-            if (currentCount == 0) {
-                weights[i] = targetCounts[i];
-            } else {
-                weights[i] = (uint256(targetCounts[i]) * 100) / currentCount;
-            }
-            totalWeight += weights[i];
+        if ($.rarityTotalsByTier[1] <= TARGET_COMMON_COUNT / 10) {
+            commonBucket = TARGET_COMMON_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 commonScalar = (TARGET_COMMON_COUNT * 100) / $.rarityTotalsByTier[1];
+            commonBucket = (TARGET_COMMON_COUNT * commonScalar) / 100;
         }
 
-        uint256 roll = LibRNG.expand(totalWeight, randomness, SALT_1);
-
-        uint256 accumulator;
-        for (uint8 i = 0; i < 5; i++) {
-            accumulator += weights[i];
-            if (roll < accumulator) {
-                return i + 1; // rarity tier (1-5)
-            }
+        if ($.rarityTotalsByTier[2] <= TARGET_UNCOMMON_COUNT / 10) {
+            uncommonBucket = TARGET_UNCOMMON_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 uncommonScalar = (TARGET_UNCOMMON_COUNT * 100) / $.rarityTotalsByTier[2];
+            uncommonBucket = (TARGET_UNCOMMON_COUNT * uncommonScalar) / 100;
         }
 
-        return 1;
+        if ($.rarityTotalsByTier[3] <= TARGET_RARE_COUNT / 10) {
+            rareBucket = TARGET_RARE_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 rareScalar = (TARGET_RARE_COUNT * 100) / $.rarityTotalsByTier[3];
+            rareBucket = (TARGET_RARE_COUNT * rareScalar) / 100;
+        }
+
+        if ($.rarityTotalsByTier[4] <= TARGET_LEGENDARY_COUNT / 10) {
+            legendaryBucket = TARGET_LEGENDARY_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 legendaryScalar = (TARGET_LEGENDARY_COUNT * 100) / $.rarityTotalsByTier[4];
+            legendaryBucket = (TARGET_LEGENDARY_COUNT * legendaryScalar) / 100;
+        }
+
+        if ($.rarityTotalsByTier[5] <= TARGET_MYTHIC_COUNT / 10) {
+            mythicBucket = TARGET_MYTHIC_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 mythicScalar = (TARGET_MYTHIC_COUNT * 100) / $.rarityTotalsByTier[5];
+            mythicBucket = (TARGET_MYTHIC_COUNT * mythicScalar) / 100;
+        }
+
+        uint256 roll = LibRNG.expand(
+            commonBucket + uncommonBucket + rareBucket + legendaryBucket + mythicBucket,
+            randomness,
+            SALT_1
+        );
+
+        if (roll < commonBucket) {
+            return 1; //  common
+        } else if (roll < commonBucket + uncommonBucket) {
+            return 2; //  uncommon
+        } else if (roll < commonBucket + uncommonBucket + rareBucket) {
+            return 3; //  rare
+        } else if (roll < commonBucket + uncommonBucket + rareBucket + legendaryBucket) {
+            return 4; //  legendary
+        } else {
+            return 5; //  mythic
+        }
     }
 
     /// @dev Performs a reroll operation for the specified token ID
