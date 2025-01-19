@@ -42,7 +42,7 @@ library LibRNG {
 
         // Generate random number using multiple sources of entropy
         uint256 randomNumber = uint256(
-            keccak256(abi.encodePacked(block.prevrandao, block.timestamp, block.number, rs.rngNonce, msg.sender))
+            keccak256(abi.encodePacked(block.prevrandao, block.timestamp, rs.rngNonce, msg.sender))
         );
 
         // If modulus is provided, constrain the range
