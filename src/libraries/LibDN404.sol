@@ -2007,6 +2007,16 @@ library LibDN404 {
         uint256 legendaryBucket;
         uint256 mythicBucket;
 
+        ///  NOTE:
+        ///  We use "weighted probability buckets" to roll rarity.
+        ///  Ideally, the chances are [4000, 2500, 1000, 200, 77]
+        ///  so commons are 4000/7777 = 51% chance and mythics are 77/7777 = 1%.
+        ///
+        ///  The code below grows or shrinks those buckets based on how many
+        ///  NFTs of each rarity are currently minted in circulation.
+        ///  If only 38 mythics are in circulation, the mythic bucket doubles.
+        ///  If less than 10% of a tier is minted, the scale is capped at 10x.
+
         if ($.rarityTotalsByTier[1] <= TARGET_COMMON_COUNT / 10) {
             commonBucket = TARGET_COMMON_COUNT * 10; //  cap the scalar at 10x for super low inventory
         } else {
