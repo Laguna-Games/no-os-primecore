@@ -63,7 +63,6 @@ library LibDN404 {
     uint256 private constant SALT_4 = 4;
     uint256 private constant SALT_5 = 5;
     uint256 private constant SALT_6 = 6;
-    uint256 private constant SALT_7 = 7;
 
     uint256 private constant MAX_SUPPLY = 7777000000000000000000;
 
@@ -486,38 +485,30 @@ library LibDN404 {
                 uint8 rarityTier = _rollRarityTier(randomness);
                 // Set rarity and increment counter
                 $.tokenIdToPCData[ids[i]].rarityTier = RarityTier(rarityTier);
-                $.rarityTotalsByTier[rarityTier]++;
+                ++$.rarityTotalsByTier[rarityTier];
                 // Roll for attributes
                 $.tokenIdToPCData[ids[i]].luck = uint16(LibRNG.expand(10000, randomness, SALT_2) + 1);
                 $.tokenIdToPCData[ids[i]].prodType = ProductionType(uint8(LibRNG.expand(5, randomness, SALT_3) + 1));
 
-                // Roll for element slots based on rarity
-                uint8 elementSlot1 = uint8(LibRNG.expand(3, randomness, SALT_4) + 1);
-                uint8 elementSlot2 = uint8(LibRNG.expand(3, randomness, SALT_5) + 1);
-                uint8 elementSlot3 = uint8(LibRNG.expand(3, randomness, SALT_6) + 1);
-                bool isEven = (uint8(LibRNG.expand(2, randomness, SALT_7) + 1) & 1) == 0;
+                //  All NFTs get an element in slot1
+                $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(uint8(LibRNG.expand(3, randomness, SALT_4) + 1));
 
-                // Assign element slots based on rarity tier
-                if (rarityTier == 1) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                } else if (rarityTier == 2) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                    if (isEven) {
-                        $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(elementSlot2);
+                if (rarityTier <= 1 || (rarityTier == 2 && (randomness & 1) != 0)) {
+                    //  Commons and half of Uncommons do not get an element in slot2
+                } else {
+                    //  Mythic, Legendary, Rare, and half of Uncommons get an element in slot2
+                    $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(
+                        uint8(LibRNG.expand(3, randomness, SALT_5) + 1)
+                    );
+
+                    if (rarityTier <= 3 || (rarityTier == 4 && (randomness & 1) != 0)) {
+                        //  Commons, Uncommons, Rares, and half of Legendaries do not get an element in slot3
+                    } else {
+                        //  Mythic and half of Legendaries get an element in slot3
+                        $.tokenIdToPCData[ids[i]].elementSlot3 = ElementType(
+                            uint8(LibRNG.expand(3, randomness, SALT_6) + 1)
+                        );
                     }
-                } else if (rarityTier == 3) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                    $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(elementSlot2);
-                } else if (rarityTier == 4) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                    $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(elementSlot2);
-                    if (isEven) {
-                        $.tokenIdToPCData[ids[i]].elementSlot3 = ElementType(elementSlot3);
-                    }
-                } else if (rarityTier == 5) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                    $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(elementSlot2);
-                    $.tokenIdToPCData[ids[i]].elementSlot3 = ElementType(elementSlot3);
                 }
             }
         }
@@ -781,7 +772,7 @@ library LibDN404 {
                     RarityTier rarityTier = $.tokenIdToPCData[id].rarityTier;
 
                     if (rarityTier > RarityTier.NONE && $.rarityTotalsByTier[uint8(rarityTier)] > 0) {
-                        $.rarityTotalsByTier[uint8(rarityTier)]--;
+                        --$.rarityTotalsByTier[uint8(rarityTier)];
                         delete $.tokenIdToPCData[id];
                     }
                 } while (fromIndex != fromEnd);
@@ -907,7 +898,7 @@ library LibDN404 {
 
                     RarityTier rarityTier = $.tokenIdToPCData[id].rarityTier;
                     if (rarityTier > RarityTier.NONE && $.rarityTotalsByTier[uint8(rarityTier)] > 0) {
-                        $.rarityTotalsByTier[uint8(rarityTier)]--;
+                        --$.rarityTotalsByTier[uint8(rarityTier)];
                         delete $.tokenIdToPCData[id];
                     }
                 } while (fromIndex != t.fromEnd);
