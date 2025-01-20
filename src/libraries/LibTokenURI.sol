@@ -51,31 +51,84 @@ library LibTokenURI {
     /// @param tokenId The token ID.
     /// @return The token URI.
     function generateTokenURI(uint256 tokenId) internal view returns (string memory) {
-        JSONPrimecoreData memory primecoreData = getJSONReadyPrimecoreData(tokenId);
-        bytes memory json = abi.encodePacked(
-            '{"token_id":"',
-            primecoreData.tokenId,
-            '","name":"',
-            primecoreData.name,
-            '","image":"',
-            _getImageURI(tokenId),
-            '","version":"1","attributes":[',
-            '{"trait_type":"Production","value":"',
-            primecoreData.production,
+        (
+            uint8 rarityTier,
+            uint16 luck,
+            uint8 prodType,
+            uint8 elementSlot1,
+            uint8 elementSlot2,
+            uint8 elementSlot3
+        ) = LibDN404.getPrimecoreData(tokenId);
+
+        return
+            string(
+                abi.encodePacked(
+                    'data:application/json;base64,',
+                    Base64.encode(
+                        abi.encodePacked(
+                            '{"token_id":"',
+                            Strings.toString(tokenId),
+                            '","name":"Prime Core #',
+                            Strings.toString(tokenId),
+                            '","image":"',
+                            _getImageURI(tokenId),
+                            '","version":"1","attributes":',
+                            _buildAttributes(prodType, rarityTier, elementSlot1, elementSlot2, elementSlot3, luck),
+                            '}'
+                        )
+                    )
+                )
+            );
+    }
+
+    /// @notice Builds the attributes JSON array
+    /// @dev Only includes element slots 2 and 3 if they are non-zero
+    function _buildAttributes(
+        uint8 prodType,
+        uint8 rarityTier,
+        uint8 elementSlot1,
+        uint8 elementSlot2,
+        uint8 elementSlot3,
+        uint16 luck
+    ) internal pure returns (bytes memory) {
+        // Initialize with required attributes
+        bytes memory attributes = abi.encodePacked(
+            '[{"trait_type":"Production","value":"',
+            getProductionName(prodType),
             '"},{"trait_type":"Rarity","value":"',
-            primecoreData.rarity,
+            getRarityName(rarityTier),
             '"},{"trait_type":"Element 1","value":"',
-            primecoreData.elementSlot1,
-            '"},{"trait_type":"Element 2","value":"',
-            primecoreData.elementSlot2,
-            '"},{"trait_type":"Element 3","value":"',
-            primecoreData.elementSlot3,
-            '"},{"trait_type":"Luck","display_type":"number","value":"',
-            primecoreData.luck,
-            '"}]}'
+            getElementName(elementSlot1),
+            '"}'
         );
 
-        return string(abi.encodePacked('data:application/json;base64,', Base64.encode(json)));
+        // Add optional elements
+        if (elementSlot2 != 0) {
+            attributes = abi.encodePacked(
+                attributes,
+                ',{"trait_type":"Element 2","value":"',
+                getElementName(elementSlot2),
+                '"}'
+            );
+        }
+
+        if (elementSlot3 != 0) {
+            attributes = abi.encodePacked(
+                attributes,
+                ',{"trait_type":"Element 3","value":"',
+                getElementName(elementSlot3),
+                '"}'
+            );
+        }
+
+        // Add luck and close array
+        return
+            abi.encodePacked(
+                attributes,
+                ',{"trait_type":"Luck","display_type":"number","value":',
+                Strings.toString(luck),
+                '}]'
+            );
     }
 
     /// @notice Gets the element name from the element ID
