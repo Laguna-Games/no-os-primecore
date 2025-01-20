@@ -237,7 +237,7 @@ library LibDN404Mirror {
     }
 
     function linkMirrorContract(address base) internal returns (bool) {
-        (base); //noop
+        (base); // noop
         DN404NFTStorage storage $ = _getDN404NFTStorage();
         if ($.baseERC20 != address(0)) revert AlreadyLinked();
         $.baseERC20 = msg.sender;

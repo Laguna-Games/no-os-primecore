@@ -182,4 +182,9 @@ contract DN404MirrorFacet {
     function linkMirrorContract(address base) public returns (bool) {
         return LibDN404Mirror.linkMirrorContract(base);
     }
+
+    /// @dev Returns the contract-level metadata URI as per ERC-7572.
+    function contractURI() public view returns (string memory) {
+        return LibDN404Mirror._readString(0xe8a3d485, 0); // `contractURI()`
+    }
 }

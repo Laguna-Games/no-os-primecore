@@ -13,7 +13,7 @@ library DN404MirrorFacetDeployLib {
     /// @notice Returns the list of public selectors belonging to the DN404MirrorFacet
     /// @return selectors List of selectors
     function getSelectorList() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](21);
+        selectors = new bytes4[](22);
         selectors[0] = DN404MirrorFacet.name.selector;
         selectors[1] = DN404MirrorFacet.symbol.selector;
         selectors[2] = DN404MirrorFacet.tokenURI.selector;
@@ -35,6 +35,7 @@ library DN404MirrorFacetDeployLib {
         selectors[18] = DN404MirrorFacet.logTransfer.selector;
         selectors[19] = DN404MirrorFacet.logDirectTransfer.selector;
         selectors[20] = DN404MirrorFacet.linkMirrorContract.selector;
+        selectors[21] = DN404MirrorFacet.contractURI.selector;
     }
 
     /// @notice Creates a FacetCut object for attaching a facet to a Diamond

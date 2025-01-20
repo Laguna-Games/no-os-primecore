@@ -28,7 +28,6 @@ pragma solidity ^0.8.19;
 /// - For MEV safety, users should NOT have concurrently open orders for the ERC20 and ERC721.
 
 import {LibDN404} from '../libraries/LibDN404.sol';
-import {LibTokenURI} from '../libraries/LibTokenURI.sol';
 
 contract DN404Facet {
     /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/

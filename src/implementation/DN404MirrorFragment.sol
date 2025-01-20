@@ -113,4 +113,6 @@ contract DN404MirrorFragment {
     function logDirectTransfer(address from, address to, uint256[] calldata ids) external returns (bool) {}
 
     function linkMirrorContract(address base) external returns (bool) {}
+
+    function contractURI() public view returns (string memory) {}
 }

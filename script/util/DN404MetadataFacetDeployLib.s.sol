@@ -13,11 +13,15 @@ library DN404MetadataFacetDeployLib {
     /// @notice Returns the list of public selectors belonging to the DN404MetadataFacet
     /// @return selectors List of selectors
     function getSelectorList() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](4);
+        selectors = new bytes4[](8);
         selectors[0] = DN404MetadataFacet.name.selector;
         selectors[1] = DN404MetadataFacet.symbol.selector;
         selectors[2] = DN404MetadataFacet.decimals.selector;
         selectors[3] = DN404MetadataFacet.tokenURINFT.selector;
+        selectors[4] = DN404MetadataFacet.baseURI.selector;
+        selectors[5] = DN404MetadataFacet.getImageURI.selector;
+        selectors[6] = DN404MetadataFacet.contractURI.selector;
+        selectors[7] = DN404MetadataFacet.tokenURI.selector;
     }
 
     /// @notice Creates a FacetCut object for attaching a facet to a Diamond

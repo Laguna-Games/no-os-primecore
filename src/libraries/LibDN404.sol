@@ -10,9 +10,8 @@ import {LibRNG} from './LibRNG.sol';
 import {Strings} from '../../lib/openzeppelin-contracts/contracts/utils/Strings.sol';
 import {IERC20} from '../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 // Uniswap V3 Core and Periphery
-import {FullMath} from '../../lib/v3-core/contracts/libraries/FullMath.sol';
 import {ISwapRouter} from '../../lib/v3-periphery/contracts/interfaces/ISwapRouter.sol';
-import {IQuoter} from '../../lib/v3-periphery/contracts/interfaces/IQuoter.sol';
+import {IUniswapV3Pool} from '../../lib/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
 // WETH Interface
 /// @title Interface for WETH
@@ -63,7 +62,6 @@ library LibDN404 {
     uint256 private constant SALT_4 = 4;
     uint256 private constant SALT_5 = 5;
     uint256 private constant SALT_6 = 6;
-    uint256 private constant SALT_7 = 7;
 
     uint256 private constant MAX_SUPPLY = 7777000000000000000000;
 
@@ -170,24 +168,27 @@ library LibDN404 {
     /// @dev The address of WETH
     address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    /// @dev The address of the Uniswap V3 Factory
-    address internal constant UNISWAP_V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-
-    /// @dev The address of the Uniswap V3 Swap Router
-    address internal constant UNISWAP_V3_SWAP_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-
-    /// @dev The address of the Uniswap V3 Quoter
-    address constant UNISWAP_V3_QUOTER = 0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6;
-
-    /// @dev The address of the Uniswap V3 Non-Fungible Position Manager
-    address constant UNISWAP_V3_NON_FUNGIBLE_POSITION_MANAGER = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
-
     /// @dev The canonical Permit2 address.
     /// For signature-based allowance granting for single transaction ERC20 `transferFrom`.
     /// To enable, override `_givePermit2DefaultInfiniteAllowance()`.
     /// [Github](https://github.com/Uniswap/permit2)
     /// [Etherscan](https://etherscan.io/address/0x000000000022D473030F116dDEE9F6B43aC78BA3)
     address internal constant _PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+
+    //  Goal number of common NFTs to be minted
+    uint16 internal constant TARGET_COMMON_COUNT = 4000;
+
+    //  Goal number of uncommon NFTs to be minted
+    uint16 internal constant TARGET_UNCOMMON_COUNT = 2500;
+
+    //  Goal number of rare NFTs to be minted
+    uint16 internal constant TARGET_RARE_COUNT = 1000;
+
+    //  Goal number of legendary NFTs to be minted
+    uint16 internal constant TARGET_LEGENDARY_COUNT = 200;
+
+    //  Goal number of mythic NFTs to be minted
+    uint16 internal constant TARGET_MYTHIC_COUNT = 77;
 
     /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
     /*                          STORAGE                           */
@@ -277,6 +278,10 @@ library LibDN404 {
         mapping(address => uint256) whitelistedAddressIndex;
         // Base URI for token metadata
         string baseURI;
+        // Contract URI for collection metadata
+        string contractURI;
+        // Token URI for ERC20 token metadata as per ERC-1047
+        string tokenURI;
         // Minimum amount of tokens required for reroll
         uint256 rerollThreshold;
         // Mapping of rarity by tier to total prime cores minted
@@ -298,9 +303,6 @@ library LibDN404 {
         ElementType elementSlot1;
         ElementType elementSlot2;
         ElementType elementSlot3;
-        uint8 firstNameIdx;
-        uint8 middleNameIdx;
-        uint8 lastNameIdx;
     }
 
     /// @dev Enum to store production type
@@ -326,7 +328,7 @@ library LibDN404 {
         NONE,
         COMMON,
         UNCOMMON,
-        EPIC,
+        RARE,
         LEGENDARY,
         MYTHIC
     }
@@ -471,38 +473,30 @@ library LibDN404 {
                 uint8 rarityTier = _rollRarityTier(randomness);
                 // Set rarity and increment counter
                 $.tokenIdToPCData[ids[i]].rarityTier = RarityTier(rarityTier);
-                $.rarityTotalsByTier[rarityTier]++;
+                ++$.rarityTotalsByTier[rarityTier];
                 // Roll for attributes
                 $.tokenIdToPCData[ids[i]].luck = uint16(LibRNG.expand(10000, randomness, SALT_2) + 1);
                 $.tokenIdToPCData[ids[i]].prodType = ProductionType(uint8(LibRNG.expand(5, randomness, SALT_3) + 1));
 
-                // Roll for element slots based on rarity
-                uint8 elementSlot1 = uint8(LibRNG.expand(3, randomness, SALT_4) + 1);
-                uint8 elementSlot2 = uint8(LibRNG.expand(3, randomness, SALT_5) + 1);
-                uint8 elementSlot3 = uint8(LibRNG.expand(3, randomness, SALT_6) + 1);
-                bool isEven = (uint8(LibRNG.expand(2, randomness, SALT_7) + 1) & 1) == 0;
+                //  All NFTs get an element in slot1
+                $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(uint8(LibRNG.expand(3, randomness, SALT_4) + 1));
 
-                // Assign element slots based on rarity tier
-                if (rarityTier == 1) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                } else if (rarityTier == 2) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                    if (isEven) {
-                        $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(elementSlot2);
+                if (rarityTier <= 1 || (rarityTier == 2 && (randomness & 1) != 0)) {
+                    //  Commons and half of Uncommons do not get an element in slot2
+                } else {
+                    //  Mythic, Legendary, Rare, and half of Uncommons get an element in slot2
+                    $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(
+                        uint8(LibRNG.expand(3, randomness, SALT_5) + 1)
+                    );
+
+                    if (rarityTier <= 3 || (rarityTier == 4 && (randomness & 1) != 0)) {
+                        //  Commons, Uncommons, Rares, and half of Legendaries do not get an element in slot3
+                    } else {
+                        //  Mythic and half of Legendaries get an element in slot3
+                        $.tokenIdToPCData[ids[i]].elementSlot3 = ElementType(
+                            uint8(LibRNG.expand(3, randomness, SALT_6) + 1)
+                        );
                     }
-                } else if (rarityTier == 3) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                    $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(elementSlot2);
-                } else if (rarityTier == 4) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                    $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(elementSlot2);
-                    if (isEven) {
-                        $.tokenIdToPCData[ids[i]].elementSlot3 = ElementType(elementSlot3);
-                    }
-                } else if (rarityTier == 5) {
-                    $.tokenIdToPCData[ids[i]].elementSlot1 = ElementType(elementSlot1);
-                    $.tokenIdToPCData[ids[i]].elementSlot2 = ElementType(elementSlot2);
-                    $.tokenIdToPCData[ids[i]].elementSlot3 = ElementType(elementSlot3);
                 }
             }
         }
@@ -766,7 +760,7 @@ library LibDN404 {
                     RarityTier rarityTier = $.tokenIdToPCData[id].rarityTier;
 
                     if (rarityTier > RarityTier.NONE && $.rarityTotalsByTier[uint8(rarityTier)] > 0) {
-                        $.rarityTotalsByTier[uint8(rarityTier)]--;
+                        --$.rarityTotalsByTier[uint8(rarityTier)];
                         delete $.tokenIdToPCData[id];
                     }
                 } while (fromIndex != fromEnd);
@@ -892,7 +886,7 @@ library LibDN404 {
 
                     RarityTier rarityTier = $.tokenIdToPCData[id].rarityTier;
                     if (rarityTier > RarityTier.NONE && $.rarityTotalsByTier[uint8(rarityTier)] > 0) {
-                        $.rarityTotalsByTier[uint8(rarityTier)]--;
+                        --$.rarityTotalsByTier[uint8(rarityTier)];
                         delete $.tokenIdToPCData[id];
                     }
                 } while (fromIndex != t.fromEnd);
@@ -1180,6 +1174,9 @@ library LibDN404 {
         /// @solidity memory-safe-assembly
         assembly {
             result := iszero(iszero(and(flags, _ADDRESS_DATA_SKIP_NFT_FLAG)))
+            if iszero(and(flags, _ADDRESS_DATA_SKIP_NFT_INITIALIZED_FLAG)) {
+                result := iszero(iszero(extcodesize(owner)))
+            }
         }
     }
 
@@ -1909,57 +1906,28 @@ library LibDN404 {
         return _getDN404Storage().baseURI;
     }
 
-    /// @notice Gets the complete image URI for a token based on its attributes
-    /// @param tokenId The ID of the token.
-    /// @return The complete image URI for the token.
-    function _getImageURI(uint256 tokenId) internal view returns (string memory) {
-        DN404Storage storage $ = _getDN404Storage();
+    /// @notice Sets the contract URI for collection metadata
+    /// @param contractURI The contract URI for collection metadata.
+    function _setContractURI(string memory contractURI) internal {
+        _getDN404Storage().contractURI = contractURI;
+    }
 
-        // Get the token's attributes
-        (
-            uint8 rarityTier,
-            uint16 luck,
-            uint8 prodType,
-            uint8 elementSlot1,
-            uint8 elementSlot2,
-            uint8 elementSlot3
-        ) = getPrimecoreData(tokenId);
+    /// @notice Gets the contract URI for collection metadata
+    /// @return The contract URI for collection metadata.
+    function _getContractURI() internal view returns (string memory) {
+        return _getDN404Storage().contractURI;
+    }
 
-        // Build the image path based on attributes
-        string memory imagePath;
-        {
-            // Convert attributes to strings
-            string memory rarityStr = Strings.toString(rarityTier);
-            string memory luckStr = Strings.toString(luck);
-            string memory prodTypeStr = Strings.toString(prodType);
+    /// @notice Sets the token URI for ERC20 token metadata
+    /// @param tokenURI The token URI for ERC20 token metadata.
+    function _setTokenURI(string memory tokenURI) internal {
+        _getDN404Storage().tokenURI = tokenURI;
+    }
 
-            // Build elements string
-            string memory elementsStr = string(
-                abi.encodePacked(
-                    Strings.toString(elementSlot1),
-                    elementSlot2 > 0 ? string(abi.encodePacked('_elementSlot2_', Strings.toString(elementSlot2))) : '',
-                    elementSlot3 > 0 ? string(abi.encodePacked('_elementSlot3_', Strings.toString(elementSlot3))) : ''
-                )
-            );
-
-            // Combine into final path
-            imagePath = string(
-                abi.encodePacked(
-                    'rarity_',
-                    rarityStr,
-                    '_luck_',
-                    luckStr,
-                    '_production_',
-                    prodTypeStr,
-                    '_elementSlot1_',
-                    elementsStr,
-                    '.png'
-                )
-            );
-        }
-
-        // Combine base URI with image path
-        return string(abi.encodePacked($.baseURI, imagePath));
+    /// @notice Gets the token URI for ERC20 token metadata
+    /// @return The token URI for ERC20 token metadata.
+    function _getTokenURI() internal view returns (string memory) {
+        return _getDN404Storage().tokenURI;
     }
 
     /// @notice Checks if the caller is an EOA
@@ -1986,32 +1954,74 @@ library LibDN404 {
     function _rollRarityTier(uint256 randomness) internal view returns (uint8) {
         DN404Storage storage $ = _getDN404Storage();
 
-        uint256[5] memory weights;
-        uint256 totalWeight;
-        uint16[5] memory targetCounts = [4000, 2500, 1000, 200, 77];
+        uint256 commonBucket;
+        uint256 uncommonBucket;
+        uint256 rareBucket;
+        uint256 legendaryBucket;
+        uint256 mythicBucket;
 
-        for (uint8 i = 0; i < 5; i++) {
-            uint16 currentCount = $.rarityTotalsByTier[i + 1];
-            // Cast to uint256 before multiplication to prevent overflow
-            if (currentCount == 0) {
-                weights[i] = targetCounts[i];
-            } else {
-                weights[i] = (uint256(targetCounts[i]) * 100) / currentCount;
-            }
-            totalWeight += weights[i];
+        ///  NOTE:
+        ///  We use "weighted probability buckets" to roll rarity.
+        ///  Ideally, the chances are [4000, 2500, 1000, 200, 77]
+        ///  so commons are 4000/7777 = 51% chance and mythics are 77/7777 = 1%.
+        ///
+        ///  The code below grows or shrinks those buckets based on how many
+        ///  NFTs of each rarity are currently minted in circulation.
+        ///  If only 38 mythics are in circulation, the mythic bucket doubles.
+        ///  If less than 10% of a tier is minted, the scale is capped at 10x.
+
+        if ($.rarityTotalsByTier[1] <= TARGET_COMMON_COUNT / 10) {
+            commonBucket = TARGET_COMMON_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 commonScalar = (TARGET_COMMON_COUNT * 100) / $.rarityTotalsByTier[1];
+            commonBucket = (TARGET_COMMON_COUNT * commonScalar) / 100;
         }
 
-        uint256 roll = LibRNG.expand(totalWeight, randomness, SALT_1);
-
-        uint256 accumulator;
-        for (uint8 i = 0; i < 5; i++) {
-            accumulator += weights[i];
-            if (roll < accumulator) {
-                return i + 1; // rarity tier (1-5)
-            }
+        if ($.rarityTotalsByTier[2] <= TARGET_UNCOMMON_COUNT / 10) {
+            uncommonBucket = TARGET_UNCOMMON_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 uncommonScalar = (TARGET_UNCOMMON_COUNT * 100) / $.rarityTotalsByTier[2];
+            uncommonBucket = (TARGET_UNCOMMON_COUNT * uncommonScalar) / 100;
         }
 
-        return 1;
+        if ($.rarityTotalsByTier[3] <= TARGET_RARE_COUNT / 10) {
+            rareBucket = TARGET_RARE_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 rareScalar = (TARGET_RARE_COUNT * 100) / $.rarityTotalsByTier[3];
+            rareBucket = (TARGET_RARE_COUNT * rareScalar) / 100;
+        }
+
+        if ($.rarityTotalsByTier[4] <= TARGET_LEGENDARY_COUNT / 10) {
+            legendaryBucket = TARGET_LEGENDARY_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 legendaryScalar = (TARGET_LEGENDARY_COUNT * 100) / $.rarityTotalsByTier[4];
+            legendaryBucket = (TARGET_LEGENDARY_COUNT * legendaryScalar) / 100;
+        }
+
+        if ($.rarityTotalsByTier[5] <= TARGET_MYTHIC_COUNT / 10) {
+            mythicBucket = TARGET_MYTHIC_COUNT * 10; //  cap the scalar at 10x for super low inventory
+        } else {
+            uint256 mythicScalar = (TARGET_MYTHIC_COUNT * 100) / $.rarityTotalsByTier[5];
+            mythicBucket = (TARGET_MYTHIC_COUNT * mythicScalar) / 100;
+        }
+
+        uint256 roll = LibRNG.expand(
+            commonBucket + uncommonBucket + rareBucket + legendaryBucket + mythicBucket,
+            randomness,
+            SALT_1
+        );
+
+        if (roll < commonBucket) {
+            return 1; //  common
+        } else if (roll < commonBucket + uncommonBucket) {
+            return 2; //  uncommon
+        } else if (roll < commonBucket + uncommonBucket + rareBucket) {
+            return 3; //  rare
+        } else if (roll < commonBucket + uncommonBucket + rareBucket + legendaryBucket) {
+            return 4; //  legendary
+        } else {
+            return 5; //  mythic
+        }
     }
 
     /// @dev Performs a reroll operation for the specified token ID
@@ -2073,7 +2083,7 @@ library LibDN404 {
 
         // Check if user has sufficient ETH for the swap
         uint256 requiredETH = _getRequiredETHForSwap(rerollThreshold);
-        if (msg.value < (requiredETH / 5)) revert InsufficientETH(); // 20% slippage
+        if (msg.value < (requiredETH / 4)) revert InsufficientETH(); // 25% slippage
     }
 
     /// @dev Executes the swap operations for reroll
@@ -2086,17 +2096,13 @@ library LibDN404 {
         DN404Storage storage $ = _getDN404Storage();
         // Transfer tokens from user to contract
         _transfer(owner, address(this), rerollThreshold);
-
         // Execute PC to ETH swap
         ethReceived = _swapPCForETH(rerollThreshold, slippageBps);
-
         // Calculate treasury fee
         treasuryFee = (ethReceived * $.treasuryFeePercentage) / 10000;
-
         // Execute ETH to PC swap
         uint256 ethForBuyback = ethReceived + userETH - treasuryFee;
         excess = _swapETHForPC(ethForBuyback, rerollThreshold, slippageBps);
-
         return (ethReceived, treasuryFee, excess);
     }
 
@@ -2130,15 +2136,8 @@ library LibDN404 {
     }
 
     /// @dev Gets required ETH amount for swap
-    function _getRequiredETHForSwap(uint256 rerollThreshold) internal returns (uint256) {
-        return
-            IQuoter(UNISWAP_V3_QUOTER).quoteExactOutputSingle(
-                WETH,
-                address(this),
-                _getPoolFeeTier(),
-                rerollThreshold,
-                0
-            );
+    function _getRequiredETHForSwap(uint256 rerollThreshold) internal view returns (uint256) {
+        return ((_getPrice() * rerollThreshold) / 1e18);
     }
 
     /// @dev Swaps PC tokens for ETH via Uniswap
@@ -2151,7 +2150,6 @@ library LibDN404 {
         // Get expected output and calculate minimum acceptable amount
         uint256 expectedOutput = _getExpectedOutput(pcAmount);
         uint256 minOutput = (expectedOutput * (10000 - slippageBps)) / 10000;
-
         // Prepare and execute swap
         _approve(address(this), router, pcAmount);
         ethReceived = _executeSwap(router, pcAmount, minOutput);
@@ -2162,8 +2160,9 @@ library LibDN404 {
     }
 
     /// @dev Gets expected output for PC to ETH swap
-    function _getExpectedOutput(uint256 pcAmount) internal returns (uint256) {
-        return IQuoter(UNISWAP_V3_QUOTER).quoteExactInputSingle(address(this), WETH, _getPoolFeeTier(), pcAmount, 0);
+    function _getExpectedOutput(uint256 pcAmount) internal view returns (uint256 expectedOutput) {
+        expectedOutput = (_getPrice() * pcAmount) / 1e18;
+        return expectedOutput;
     }
 
     /// @dev Executes the swap through Uniswap
@@ -2192,14 +2191,7 @@ library LibDN404 {
         address router = _getUniswapRouter();
 
         // Calculate maximum input based on quote and slippage
-        uint256 expectedInput = IQuoter(UNISWAP_V3_QUOTER).quoteExactOutputSingle(
-            WETH,
-            address(this),
-            _getPoolFeeTier(),
-            pcAmount,
-            0
-        );
-
+        uint256 expectedInput = (_getPrice() * pcAmount) / 1e18;
         uint256 maxInput = (expectedInput * (10000 + slippageBps)) / 10000;
         if (maxInput > ethAmount) revert SlippageExceedsAvailableETH();
 
@@ -2226,6 +2218,23 @@ library LibDN404 {
         uint256 excess = ethAmount - amountIn;
         IWETH(WETH).withdraw(excess);
         return excess;
+    }
+
+    /// @dev Gets the price of WETH per PC
+    /// @return price The amount of WETH per PC (in wei)
+    function _getPrice() internal view returns (uint256 price) {
+        IUniswapV3Pool swapPool = IUniswapV3Pool(_getPoolAddress());
+        (uint160 sqrtPriceX96, , , , , , ) = swapPool.slot0();
+        return (uint256(sqrtPriceX96) * uint256(sqrtPriceX96) * 1e18) >> (96 * 2);
+    }
+
+    /// @dev Gets the cost of a reroll
+    /// @return pcAmount The amount of PC tokens required for the reroll
+    /// @return ethAmount The amount of ETH required for the reroll
+    function _getRerollCost() internal view returns (uint256 pcAmount, uint256 ethAmount) {
+        pcAmount = _getRerollThreshold();
+        ethAmount = ((_getPrice() * pcAmount) / 1e18) / 4;
+        return (pcAmount, ethAmount);
     }
 
     /// @notice Sets the treasury address
