@@ -462,6 +462,7 @@ library LibDN404 {
     /// @dev Hook that is called after a batch of NFT transfers.
     /// The lengths of `from`, `to`, and `ids` are guaranteed to be the same.
     function _afterNFTTransfers(address[] memory from, address[] memory to, uint256[] memory ids) internal {
+        (to); // noop
         DN404Storage storage $ = _getDN404Storage();
 
         for (uint256 i = 0; i < ids.length; i++) {
