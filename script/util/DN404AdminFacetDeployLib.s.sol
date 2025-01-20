@@ -13,7 +13,7 @@ library DN404AdminFacetDeployLib {
     /// @notice Returns the list of public selectors belonging to the DN404AdminFacet
     /// @return selectors List of selectors
     function getSelectorList() internal pure returns (bytes4[] memory selectors) {
-        selectors = new bytes4[](23);
+        selectors = new bytes4[](27);
         selectors[0] = DN404AdminFacet.initializeDN404.selector;
         selectors[1] = DN404AdminFacet.setPresaleContract.selector;
         selectors[2] = DN404AdminFacet.getPresaleContract.selector;
@@ -37,6 +37,10 @@ library DN404AdminFacetDeployLib {
         selectors[20] = DN404AdminFacet.getPoolFeeTier.selector;
         selectors[21] = DN404AdminFacet.setPoolAddress.selector;
         selectors[22] = DN404AdminFacet.getPoolAddress.selector;
+        selectors[23] = DN404AdminFacet.getRerollCost.selector;
+        selectors[24] = DN404AdminFacet.setBaseURI.selector;
+        selectors[25] = DN404AdminFacet.setContractURI.selector;
+        selectors[26] = DN404AdminFacet.setTokenURI.selector;
     }
 
     /// @notice Creates a FacetCut object for attaching a facet to a Diamond

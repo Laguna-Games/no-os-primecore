@@ -37,4 +37,25 @@ contract DN404MetadataFacet {
     function tokenURINFT(uint256 id) public view returns (string memory) {
         return LibTokenURI.generateTokenURI(uint32(id));
     }
+
+    /// @notice Returns the baseURI of the token.
+    /// @return The baseURI of the token.
+    function baseURI() public view returns (string memory) {
+        return LibDN404._getBaseURI();
+    }
+
+    /// @notice Returns the imageURI of the token.
+    function getImageURI(uint256 tokenId) public view returns (string memory) {
+        return LibTokenURI._getImageURI(tokenId);
+    }
+
+    /// @dev Returns the contract-level metadata URI as per ERC-7572.
+    function contractURI() public view returns (string memory) {
+        return LibDN404._getContractURI();
+    }
+
+    /// @dev Returns the ERC20 token metadata URI as per ERC-1047.
+    function tokenURI() public view returns (string memory) {
+        return LibDN404._getTokenURI();
+    }
 }
