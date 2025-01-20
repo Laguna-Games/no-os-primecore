@@ -12,14 +12,14 @@ import {LibDN404} from './LibDN404.sol';
 library LibTokenURI {
     /// @notice Struct for storing Primecore data in JSON format
     struct JSONPrimecoreData {
-        string tokenId;
         string name;
-        string rarity;
-        string luck;
+        string tokenId;
         string production;
+        string rarity;
         string elementSlot1;
         string elementSlot2;
         string elementSlot3;
+        string luck;
     }
 
     /// @notice Gets the JSON ready Primecore data
@@ -36,14 +36,14 @@ library LibTokenURI {
         ) = LibDN404.getPrimecoreData(tokenId);
         return
             JSONPrimecoreData(
+                string.concat('Prime Core #', Strings.toString(tokenId)),
                 Strings.toString(tokenId),
-                'Primecore',
-                getRarityName(rarityTier),
-                Strings.toString(luck),
                 getProductionName(prodType),
+                getRarityName(rarityTier),
                 getElementName(elementSlot1),
                 getElementName(elementSlot2),
-                getElementName(elementSlot3)
+                getElementName(elementSlot3),
+                Strings.toString(luck)
             );
     }
 
@@ -55,22 +55,23 @@ library LibTokenURI {
         bytes memory json = abi.encodePacked(
             '{"token_id":"',
             primecoreData.tokenId,
-            '","name":"#',
+            '","name":"',
             primecoreData.name,
             '","image":"',
-            LibDN404._getImageURI(tokenId),
-            '","version":"1","attributes":[{"trait_type":"Rarity","value":"',
-            primecoreData.rarity,
-            '"},{"trait_type":"Luck","display_type":"number","value":"',
-            primecoreData.luck,
-            '"},{"trait_type":"Production","value":"',
+            _getImageURI(tokenId),
+            '","version":"1","attributes":[',
+            '{"trait_type":"Production","value":"',
             primecoreData.production,
+            '"},{"trait_type":"Rarity","value":"',
+            primecoreData.rarity,
             '"},{"trait_type":"Element 1","value":"',
             primecoreData.elementSlot1,
             '"},{"trait_type":"Element 2","value":"',
             primecoreData.elementSlot2,
             '"},{"trait_type":"Element 3","value":"',
             primecoreData.elementSlot3,
+            '"},{"trait_type":"Luck","display_type":"number","value":"',
+            primecoreData.luck,
             '"}]}'
         );
 
@@ -82,15 +83,15 @@ library LibTokenURI {
     /// @return The element name.
     function getElementName(uint8 element) internal pure returns (string memory) {
         if (element == 1) {
-            return 'Fire';
+            return 'fire';
         }
         if (element == 2) {
-            return 'Water';
+            return 'water';
         }
         if (element == 3) {
-            return 'Earth';
+            return 'earth';
         }
-        return 'None';
+        return 'blank';
     }
 
     /// @notice Gets the rarity name from the rarity ID
@@ -98,39 +99,62 @@ library LibTokenURI {
     /// @return The rarity name.
     function getRarityName(uint8 rarity) internal pure returns (string memory) {
         if (rarity == 1) {
-            return 'Common';
+            return 'common';
         }
         if (rarity == 2) {
-            return 'Uncommon';
+            return 'uncommon';
         }
         if (rarity == 3) {
-            return 'Epic';
+            return 'rare';
         }
         if (rarity == 4) {
-            return 'Legendary';
+            return 'legendary';
         }
         if (rarity == 5) {
-            return 'Mythic';
+            return 'mythic';
         }
-        return 'None';
+        return 'blank';
     }
 
+    /// @notice Gets the production name from the production ID
+    /// @param production The production ID.
+    /// @return The production name.
     function getProductionName(uint8 production) internal pure returns (string memory) {
         if (production == 1) {
-            return 'Hydrosteel';
+            return 'hydrosteel';
         }
         if (production == 2) {
-            return 'Terraglass';
+            return 'terraglass';
         }
         if (production == 3) {
-            return 'Firestone';
+            return 'firestone';
         }
         if (production == 4) {
-            return 'Kronosite';
+            return 'kronosite';
         }
         if (production == 5) {
-            return 'Celestium';
+            return 'celestium';
         }
-        return 'None';
+        return 'blank';
+    }
+
+    function _getImageURI(uint256 tokenId) internal view returns (string memory) {
+        JSONPrimecoreData memory primecoreData = getJSONReadyPrimecoreData(tokenId);
+        return
+            string(
+                abi.encodePacked(
+                    LibDN404._getBaseURI(),
+                    primecoreData.production,
+                    '-',
+                    primecoreData.rarity,
+                    '_',
+                    primecoreData.elementSlot1,
+                    '_',
+                    primecoreData.elementSlot2,
+                    '_',
+                    primecoreData.elementSlot3,
+                    '.gif'
+                )
+            );
     }
 }

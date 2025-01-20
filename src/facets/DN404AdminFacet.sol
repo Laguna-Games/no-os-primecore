@@ -24,6 +24,7 @@ contract DN404AdminFacet {
     function initializeDN404(
         string memory name_,
         string memory symbol_,
+        string memory baseURI_,
         uint96 initialTokenSupply,
         address initialSupplyOwner,
         address mirror
@@ -32,7 +33,7 @@ contract DN404AdminFacet {
 
         LibDN404._getDN404Storage().name = name_;
         LibDN404._getDN404Storage().symbol = symbol_;
-
+        LibDN404._getDN404Storage().baseURI = baseURI_;
         LibDN404._initializeDN404(initialTokenSupply, initialSupplyOwner, mirror);
     }
 
@@ -120,7 +121,7 @@ contract DN404AdminFacet {
     }
 
     /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
-    /*                    REROLL CONFIGURATION                   */
+    /*                    REROLL FUNCTIONS                        */
     /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
 
     /// @notice Sets the minimum amount of tokens that need to be transferred from LP to trigger a reroll
@@ -134,6 +135,13 @@ contract DN404AdminFacet {
     /// @return The current threshold amount in wei (18 decimals)
     function getRerollThreshold() external view returns (uint256) {
         return LibDN404._getRerollThreshold();
+    }
+
+    /// @notice Gets the cost of a reroll
+    /// @return pcAmount The amount of PC tokens required for the reroll
+    /// @return ethAmount The amount of ETH required for the reroll
+    function getRerollCost() external view returns (uint256 pcAmount, uint256 ethAmount) {
+        return LibDN404._getRerollCost();
     }
 
     /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
@@ -219,5 +227,24 @@ contract DN404AdminFacet {
     /// @return Whether the contract implements the DN404 interface.
     function implementsDN404() public pure returns (bool) {
         return true;
+    }
+
+    /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
+    /*                    URI FUNCTIONS                           */
+    /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
+
+    function setBaseURI(string memory baseURI) public {
+        LibContractOwner.enforceIsContractOwner();
+        LibDN404._setBaseURI(baseURI);
+    }
+
+    function setContractURI(string memory contractURI) public {
+        LibContractOwner.enforceIsContractOwner();
+        LibDN404._setContractURI(contractURI);
+    }
+
+    function setTokenURI(string memory tokenURI) public {
+        LibContractOwner.enforceIsContractOwner();
+        LibDN404._setTokenURI(tokenURI);
     }
 }

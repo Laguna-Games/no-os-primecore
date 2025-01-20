@@ -217,7 +217,6 @@ library LibDN404Mirror {
     }
 
     function logDirectTransfer(address from, address to, uint256[] calldata ids) internal returns (bool) {
-        (ids); // noop
         DN404NFTStorage storage $ = _getDN404NFTStorage();
         if ($.baseERC20 != msg.sender) revert SenderNotBase();
         /// @solidity memory-safe-assembly
@@ -237,7 +236,6 @@ library LibDN404Mirror {
     }
 
     function linkMirrorContract(address base) internal returns (bool) {
-        (base); //noop
         DN404NFTStorage storage $ = _getDN404NFTStorage();
         if ($.baseERC20 != address(0)) revert AlreadyLinked();
         $.baseERC20 = msg.sender;
@@ -249,7 +247,6 @@ library LibDN404Mirror {
     }
 
     function logTransfer(uint256[] calldata ids) internal returns (bool) {
-        (ids); // noop
         DN404NFTStorage storage $ = _getDN404NFTStorage();
         if ($.baseERC20 != msg.sender) revert SenderNotBase();
 

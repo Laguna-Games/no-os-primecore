@@ -10,9 +10,8 @@ import {LibRNG} from './LibRNG.sol';
 import {Strings} from '../../lib/openzeppelin-contracts/contracts/utils/Strings.sol';
 import {IERC20} from '../../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol';
 // Uniswap V3 Core and Periphery
-import {FullMath} from '../../lib/v3-core/contracts/libraries/FullMath.sol';
 import {ISwapRouter} from '../../lib/v3-periphery/contracts/interfaces/ISwapRouter.sol';
-import {IQuoter} from '../../lib/v3-periphery/contracts/interfaces/IQuoter.sol';
+import {IUniswapV3Pool} from '../../lib/v3-core/contracts/interfaces/IUniswapV3Pool.sol';
 
 // WETH Interface
 /// @title Interface for WETH
@@ -169,18 +168,6 @@ library LibDN404 {
     /// @dev The address of WETH
     address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
-    /// @dev The address of the Uniswap V3 Factory
-    address internal constant UNISWAP_V3_FACTORY = 0x1F98431c8aD98523631AE4a59f267346ea31F984;
-
-    /// @dev The address of the Uniswap V3 Swap Router
-    address internal constant UNISWAP_V3_SWAP_ROUTER = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-
-    /// @dev The address of the Uniswap V3 Quoter
-    address constant UNISWAP_V3_QUOTER = 0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6;
-
-    /// @dev The address of the Uniswap V3 Non-Fungible Position Manager
-    address constant UNISWAP_V3_NON_FUNGIBLE_POSITION_MANAGER = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
-
     /// @dev The canonical Permit2 address.
     /// For signature-based allowance granting for single transaction ERC20 `transferFrom`.
     /// To enable, override `_givePermit2DefaultInfiniteAllowance()`.
@@ -291,6 +278,10 @@ library LibDN404 {
         mapping(address => uint256) whitelistedAddressIndex;
         // Base URI for token metadata
         string baseURI;
+        // Contract URI for collection metadata
+        string contractURI;
+        // Token URI for ERC20 token metadata as per ERC-1047
+        string tokenURI;
         // Minimum amount of tokens required for reroll
         uint256 rerollThreshold;
         // Mapping of rarity by tier to total prime cores minted
@@ -312,9 +303,6 @@ library LibDN404 {
         ElementType elementSlot1;
         ElementType elementSlot2;
         ElementType elementSlot3;
-        uint8 firstNameIdx;
-        uint8 middleNameIdx;
-        uint8 lastNameIdx;
     }
 
     /// @dev Enum to store production type
@@ -340,7 +328,7 @@ library LibDN404 {
         NONE,
         COMMON,
         UNCOMMON,
-        EPIC,
+        RARE,
         LEGENDARY,
         MYTHIC
     }
@@ -474,7 +462,6 @@ library LibDN404 {
     /// @dev Hook that is called after a batch of NFT transfers.
     /// The lengths of `from`, `to`, and `ids` are guaranteed to be the same.
     function _afterNFTTransfers(address[] memory from, address[] memory to, uint256[] memory ids) internal {
-        (to); // noop
         DN404Storage storage $ = _getDN404Storage();
 
         for (uint256 i = 0; i < ids.length; i++) {
@@ -1186,6 +1173,9 @@ library LibDN404 {
         /// @solidity memory-safe-assembly
         assembly {
             result := iszero(iszero(and(flags, _ADDRESS_DATA_SKIP_NFT_FLAG)))
+            if iszero(and(flags, _ADDRESS_DATA_SKIP_NFT_INITIALIZED_FLAG)) {
+                result := iszero(iszero(extcodesize(owner)))
+            }
         }
     }
 
@@ -1915,57 +1905,28 @@ library LibDN404 {
         return _getDN404Storage().baseURI;
     }
 
-    /// @notice Gets the complete image URI for a token based on its attributes
-    /// @param tokenId The ID of the token.
-    /// @return The complete image URI for the token.
-    function _getImageURI(uint256 tokenId) internal view returns (string memory) {
-        DN404Storage storage $ = _getDN404Storage();
+    /// @notice Sets the contract URI for collection metadata
+    /// @param contractURI The contract URI for collection metadata.
+    function _setContractURI(string memory contractURI) internal {
+        _getDN404Storage().contractURI = contractURI;
+    }
 
-        // Get the token's attributes
-        (
-            uint8 rarityTier,
-            uint16 luck,
-            uint8 prodType,
-            uint8 elementSlot1,
-            uint8 elementSlot2,
-            uint8 elementSlot3
-        ) = getPrimecoreData(tokenId);
+    /// @notice Gets the contract URI for collection metadata
+    /// @return The contract URI for collection metadata.
+    function _getContractURI() internal view returns (string memory) {
+        return _getDN404Storage().contractURI;
+    }
 
-        // Build the image path based on attributes
-        string memory imagePath;
-        {
-            // Convert attributes to strings
-            string memory rarityStr = Strings.toString(rarityTier);
-            string memory luckStr = Strings.toString(luck);
-            string memory prodTypeStr = Strings.toString(prodType);
+    /// @notice Sets the token URI for ERC20 token metadata
+    /// @param tokenURI The token URI for ERC20 token metadata.
+    function _setTokenURI(string memory tokenURI) internal {
+        _getDN404Storage().tokenURI = tokenURI;
+    }
 
-            // Build elements string
-            string memory elementsStr = string(
-                abi.encodePacked(
-                    Strings.toString(elementSlot1),
-                    elementSlot2 > 0 ? string(abi.encodePacked('_elementSlot2_', Strings.toString(elementSlot2))) : '',
-                    elementSlot3 > 0 ? string(abi.encodePacked('_elementSlot3_', Strings.toString(elementSlot3))) : ''
-                )
-            );
-
-            // Combine into final path
-            imagePath = string(
-                abi.encodePacked(
-                    'rarity_',
-                    rarityStr,
-                    '_luck_',
-                    luckStr,
-                    '_production_',
-                    prodTypeStr,
-                    '_elementSlot1_',
-                    elementsStr,
-                    '.png'
-                )
-            );
-        }
-
-        // Combine base URI with image path
-        return string(abi.encodePacked($.baseURI, imagePath));
+    /// @notice Gets the token URI for ERC20 token metadata
+    /// @return The token URI for ERC20 token metadata.
+    function _getTokenURI() internal view returns (string memory) {
+        return _getDN404Storage().tokenURI;
     }
 
     /// @notice Checks if the caller is an EOA
@@ -2121,7 +2082,7 @@ library LibDN404 {
 
         // Check if user has sufficient ETH for the swap
         uint256 requiredETH = _getRequiredETHForSwap(rerollThreshold);
-        if (msg.value < (requiredETH / 5)) revert InsufficientETH(); // 20% slippage
+        if (msg.value < (requiredETH / 4)) revert InsufficientETH(); // 25% slippage
     }
 
     /// @dev Executes the swap operations for reroll
@@ -2134,17 +2095,13 @@ library LibDN404 {
         DN404Storage storage $ = _getDN404Storage();
         // Transfer tokens from user to contract
         _transfer(owner, address(this), rerollThreshold);
-
         // Execute PC to ETH swap
         ethReceived = _swapPCForETH(rerollThreshold, slippageBps);
-
         // Calculate treasury fee
         treasuryFee = (ethReceived * $.treasuryFeePercentage) / 10000;
-
         // Execute ETH to PC swap
         uint256 ethForBuyback = ethReceived + userETH - treasuryFee;
         excess = _swapETHForPC(ethForBuyback, rerollThreshold, slippageBps);
-
         return (ethReceived, treasuryFee, excess);
     }
 
@@ -2178,15 +2135,8 @@ library LibDN404 {
     }
 
     /// @dev Gets required ETH amount for swap
-    function _getRequiredETHForSwap(uint256 rerollThreshold) internal returns (uint256) {
-        return
-            IQuoter(UNISWAP_V3_QUOTER).quoteExactOutputSingle(
-                WETH,
-                address(this),
-                _getPoolFeeTier(),
-                rerollThreshold,
-                0
-            );
+    function _getRequiredETHForSwap(uint256 rerollThreshold) internal view returns (uint256) {
+        return ((_getPrice() * rerollThreshold) / 1e18);
     }
 
     /// @dev Swaps PC tokens for ETH via Uniswap
@@ -2199,7 +2149,6 @@ library LibDN404 {
         // Get expected output and calculate minimum acceptable amount
         uint256 expectedOutput = _getExpectedOutput(pcAmount);
         uint256 minOutput = (expectedOutput * (10000 - slippageBps)) / 10000;
-
         // Prepare and execute swap
         _approve(address(this), router, pcAmount);
         ethReceived = _executeSwap(router, pcAmount, minOutput);
@@ -2210,8 +2159,9 @@ library LibDN404 {
     }
 
     /// @dev Gets expected output for PC to ETH swap
-    function _getExpectedOutput(uint256 pcAmount) internal returns (uint256) {
-        return IQuoter(UNISWAP_V3_QUOTER).quoteExactInputSingle(address(this), WETH, _getPoolFeeTier(), pcAmount, 0);
+    function _getExpectedOutput(uint256 pcAmount) internal view returns (uint256 expectedOutput) {
+        expectedOutput = (_getPrice() * pcAmount) / 1e18;
+        return expectedOutput;
     }
 
     /// @dev Executes the swap through Uniswap
@@ -2240,14 +2190,7 @@ library LibDN404 {
         address router = _getUniswapRouter();
 
         // Calculate maximum input based on quote and slippage
-        uint256 expectedInput = IQuoter(UNISWAP_V3_QUOTER).quoteExactOutputSingle(
-            WETH,
-            address(this),
-            _getPoolFeeTier(),
-            pcAmount,
-            0
-        );
-
+        uint256 expectedInput = (_getPrice() * pcAmount) / 1e18;
         uint256 maxInput = (expectedInput * (10000 + slippageBps)) / 10000;
         if (maxInput > ethAmount) revert SlippageExceedsAvailableETH();
 
@@ -2274,6 +2217,23 @@ library LibDN404 {
         uint256 excess = ethAmount - amountIn;
         IWETH(WETH).withdraw(excess);
         return excess;
+    }
+
+    /// @dev Gets the price of WETH per PC
+    /// @return price The amount of WETH per PC (in wei)
+    function _getPrice() internal view returns (uint256 price) {
+        IUniswapV3Pool swapPool = IUniswapV3Pool(_getPoolAddress());
+        (uint160 sqrtPriceX96, , , , , , ) = swapPool.slot0();
+        return (uint256(sqrtPriceX96) * uint256(sqrtPriceX96) * 1e18) >> (96 * 2);
+    }
+
+    /// @dev Gets the cost of a reroll
+    /// @return pcAmount The amount of PC tokens required for the reroll
+    /// @return ethAmount The amount of ETH required for the reroll
+    function _getRerollCost() internal view returns (uint256 pcAmount, uint256 ethAmount) {
+        pcAmount = _getRerollThreshold();
+        ethAmount = ((_getPrice() * pcAmount) / 1e18) / 4;
+        return (pcAmount, ethAmount);
     }
 
     /// @notice Sets the treasury address
