@@ -126,10 +126,6 @@ contract DN404Fragment {
     /*                      METADATA FUNCTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function name() external view returns (string memory) {}
-
-    function symbol() external view returns (string memory) {}
-
     function initializeDN404(
         string memory name_,
         string memory symbol_,
@@ -141,8 +137,6 @@ contract DN404Fragment {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      ERC20 OPERATIONS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    function decimals() external pure returns (uint8) {}
 
     function totalSupply() external view returns (uint256) {}
 
@@ -187,8 +181,6 @@ contract DN404Fragment {
     function balanceOfNFT(address owner) external view returns (uint256) {}
 
     function totalNFTSupply() external view returns (uint256) {}
-
-    function tokenURINFT(uint256 id) external view returns (string memory) {}
 
     function implementsDN404() external pure returns (bool) {}
 
