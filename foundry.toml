@@ -1,0 +1,186 @@
+
+## defaults for all profiles
+[profile.default]
+
+# the source directory
+src = 'src'
+
+# the test directory
+test = 'test'
+
+# the output directory (for artifacts)
+out = 'build'
+
+# the output directory (for log broadcasts)
+broadcast = 'logs'
+
+# the script directory
+script = 'script'
+
+# added data in the build artifacts
+extra_output_files = [
+    "abi",
+    "devdoc",
+    "userdoc",
+    "metadata",
+    "storageLayout",
+    "evm.bytecode",
+    "evm.deployedBytecode",
+    "evm.methodIdentifiers",
+    "evm.gasEstimates",
+]
+
+# a list of library directories
+libs = ['lib']
+
+# a list of remappings
+remappings = []
+
+# Auto-detect remappings
+auto_detect_remappings = false
+
+# a list of deployed libraries to link against
+libraries = []
+
+# whether to cache builds or not
+cache = true
+
+# where the cache is stored if enabled
+cache_path = 'cache'
+
+# whether to ignore the cache (clean build)
+force = false
+
+# list of contracts to report gas of
+gas_reports = ['*']
+
+# the evm version (by hardfork name)
+evm_version = 'paris'
+
+# override for the solc version (setting this ignores `auto_detect_solc`)
+solc_version = '0.8.20'
+
+# enable auto-detection of the appropriate solc version to use
+auto_detect_solc = false
+
+# offline mode, if enabled, network access (downloading solc) is disallowed
+offline = false
+
+# enable or disable the solc optimizer
+optimizer = true
+
+# optimize between deploy cost and execution cost (higher = more expected executions)
+optimizer_runs = 999_999
+
+# whether to enable EVM bytecode generation through an intermediate representation (ir) or not
+via_ir = true
+
+# the verbosity of tests (equivalent to -vv -vvv -vvvv -vvvvv)
+verbosity = 2
+
+# a list of ignored solc error codes
+ignored_error_codes = [5574]
+
+# the number of fuzz runs for tests
+fuzz = { runs = 256 }
+
+# the number of runs that must execute for each invariant test group
+invariant = { runs = 256 }
+
+# whether to enable foreign function interface (ffi) cheatcodes or not
+ffi = false
+
+# the address of `msg.sender` in tests
+sender = '0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38'
+
+# the address of `tx.origin` in tests
+tx_origin = '0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38'
+
+# the initial balance of the test contract
+initial_balance = '0xffffffffffffffffffffffff'
+
+# the block number we are at in tests
+block_number = 1
+
+# the chain id we are on in tests
+chain_id = 1337
+
+# the gas limit in tests
+gas_limit = 9223372036854775807
+
+# the gas price (in wei) in tests
+gas_price = 5
+
+# the base fee (in wei) in tests
+block_base_fee_per_gas = 1
+
+# the address of `block.coinbase` in tests
+block_coinbase = '0x0000000000000000000000000000000000000000'
+
+# the value of `block.timestamp` in tests
+block_timestamp = 1
+
+# the value of `block.difficulty` in tests
+block_difficulty = 0
+
+# set read-write access to project root
+fs_permissions = [{ access = "read-write", path = "./" }]
+
+## optimizer details for the default profile
+[profile.default.optimizer_details]
+peephole = true
+inliner = true
+jumpdest_remover = true
+order_literals = true
+deduplicate = true
+cse = true
+constant_optimizer = true
+yul = true                # whether to enable the new Yul optimizer or not
+
+# sets the `yulDetails` of the `optimizer_details` for the `default` profile
+[profile.default.optimizer_details.yulDetails]
+stackAllocation = true               # whether to enable the improvement of allocation of stack slots for variables or not
+optimizerSteps = 'dhfoDgvulfnTUtnIf' # the optimization steps to be applied
+
+# These are all the formatter `forge fmt` params.
+[fmt]
+line_length = 120
+tab_width = 4
+bracket_spacing = false
+int_types = 'long'
+multiline_func_header = 'attributes_first'
+quote_style = 'double'
+number_underscore = 'preserve'
+single_line_statement_blocks = 'preserve'
+wrap_comments = false
+ignore = ["src/console.sol", "src/console2.sol"]
+
+# These are all the params for the `forge doc` command
+[doc]
+out = 'docs'
+# title = '' # Title for the generated documentation.
+# book = '' # Path to user provided book.toml. It will be merged with default settings during doc generation.
+# repository = '' # The git repository URL. Used to provide links to git source files.
+# ignore = [] # List of files to ignore when generating documentation.
+
+[rpc_endpoints]
+ethereum = "${ETHEREUM_RPC}"
+sepolia = "${SEPOLIA_RPC}"
+base = "${BASE_RPC}"
+polygon = "${POLYGON_RPC}"
+xai-mainnet = "${XAI_MAINNET_RPC}"
+xai-sepolia = "${XAI_SEPOLIA_RPC}"
+arb-one = "${ARBITRUM_ONE_RPC}"
+arb-sepolia = "${ARB_SEPOLIA_RPC}"
+lag-devnet = "https://laguna-devnet.rpc.caldera.xyz/http"
+
+[etherscan]
+ethereum = { key = "${ETHERSCAN_API_KEY}", chain = "1" }
+sepolia = { key = "${SEPOLIASCAN_API_KEY}", chain = "11155111" }
+base = { key = "${BASESCAN_API_KEY}", chain = "8453", url = "https://basescan.org/api" }
+polygon = { key = "${POLYGONSCAN_API_KEY}", chain = "137", url = "https://api.polygonscan.com/api" }
+xai-mainnet = { key = "${XAI_BLOCKSCOUT_API_KEY}", chain = "660279", url = "https://explorer.xai-chain.net/api" }
+xai-sepolia = { key = "${XAI_SEPOLIA_BLOCKSCOUT_API_KEY}", chain = "37714555429", url = "https://testnet-explorer-v2.xai-chain.net/api" }
+arb-one = { key = "${ARBITRUM_API_KEY}", chain = "42161" }
+arb-sepolia = { key = "${ARBITRUM_SEPOLIA_API_KEY}", chain = "421614", url = "https://sepolia.arbiscan.io/api" }
+lag-devnet = { key = "${ETHERSCAN_API_KEY}", chain = "6034899" }

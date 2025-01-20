@@ -1,0 +1,80 @@
+{
+    "extends": "solhint:recommended",
+    "plugins": [ ],
+    "rules": {
+        "avoid-call-value": "warn",
+        "avoid-low-level-calls": "warn",
+        "avoid-sha3": "warn",
+        "avoid-suicide": "error",
+        "avoid-throw": "error",
+        "avoid-tx-origin": "warn",
+        "check-send-result": "warn",
+        "code-complexity": [
+            "warn",
+            7
+        ],
+        "compiler-version": [
+            "error",
+            "^0.8.0"
+        ],
+        "comprehensive-interface": "off",
+        "const-name-snakecase": "warn",
+        "constructor-syntax": "warn",
+        "contract-name-camelcase": "warn",
+        "event-name-camelcase": "warn",
+        "func-name-mixedcase": "warn",
+        "func-order": "warn",
+        "func-param-name-mixedcase": "warn",
+        "func-visibility": [
+            "error",
+            {
+                "ignoreConstructors": false
+            }
+        ],
+        "function-max-lines": [
+            "off",
+            50
+        ],
+        "imports-on-top": "warn",
+        "mark-callable-contracts": "off",
+        "max-line-length": [
+            "warn",
+            120
+        ],
+        "max-states-count": [
+            "warn",
+            15
+        ],
+        "modifier-name-mixedcase": "warn",
+        "multiple-sends": "warn",
+        "no-complex-fallback": "warn",
+        "no-empty-blocks": "warn",
+        "no-inline-assembly": "error",
+        "no-unused-vars": "error",
+        "not-rely-on-block-hash": "warn",
+        "not-rely-on-time": "off",
+        "ordering": "off",
+        "payable-fallback": "warn",
+        "private-vars-leading-underscore": [
+            "off",
+            {
+                "strict": false
+            }
+        ],
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "reason-string": [
+            "warn",
+            {
+                "maxLength": 32
+            }
+        ],
+        "reentrancy": "error",
+        "state-visibility": "warn",
+        "use-forbidden-name": "warn",
+        "var-name-mixedcase": "warn",
+        "visibility-modifier-order": "warn"
+    }
+}
