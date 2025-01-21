@@ -810,8 +810,6 @@ library LibDN404 {
         AddressData storage toAddressData = $.addressData[to];
         if ($.mirrorERC721 == address(0)) revert DNNotInitialized();
 
-        _transferReroll(from, to, amount);
-
         _DNTransferTemps memory t;
         t.fromOwnedLength = fromAddressData.ownedLength;
         t.toOwnedLength = toAddressData.ownedLength;
@@ -827,10 +825,17 @@ library LibDN404 {
                 t.numNFTBurns = _zeroFloorSub(t.fromOwnedLength, fromBalance / _unit());
 
                 if (!getSkipNFT(to)) {
-                    if (_isWhitelisted(from) && amount >= $.rerollThreshold) {
+                    if (_isWhitelisted(from)) {
                         if (from == to) t.toOwnedLength = t.fromOwnedLength - t.numNFTBurns;
-                        t.numNFTMints = _zeroFloorSub(toBalance / _unit(), t.toOwnedLength);
-                        if (t.numNFTMints > _getMaxMintPerTransfer()) revert MaxMintPerTransferExceeded();
+                        if (amount > _unit()) {
+                            t.numNFTMints = _zeroFloorSub(toBalance / _unit(), t.toOwnedLength);
+                            if (t.numNFTMints > _getMaxMintPerTransfer()) revert MaxMintPerTransferExceeded();
+                        }
+                        if (amount >= $.rerollThreshold && amount <= _unit()) {
+                            t.numNFTMints = (_zeroFloorSub(toBalance / _unit(), t.toOwnedLength) == 0 ? 0 : 1);
+                        } else {
+                            t.numNFTMints = 0;
+                        }
                     }
                 }
             }
@@ -957,22 +962,6 @@ library LibDN404 {
                     ),
                     _concat(ids, _packedLogsIds(t.packedLogs))
                 );
-            }
-        }
-    }
-
-    // transfer reroll
-    function _transferReroll(address from, address to, uint256 amount) internal {
-        DN404Storage storage $ = _getDN404Storage();
-        if (!getSkipNFT(to) && _isWhitelisted(from) && amount >= $.rerollThreshold) {
-            // Calculate if this transfer completes a new token unit
-            uint256 previousCompleteTokens = $.addressData[to].balance / _unit();
-            uint256 toBalance = uint256($.addressData[to].balance) + amount;
-            uint256 newCompleteTokens = toBalance / _unit();
-
-            if (newCompleteTokens == previousCompleteTokens) {
-                _burn(to, _unit());
-                _mint(to, _unit());
             }
         }
     }
@@ -2075,6 +2064,7 @@ library LibDN404 {
         uint256 userETH = msg.value;
 
         // Prepare for reroll
+        bool isPartialBalanceLessThanThreshold = (_balanceOf(owner) % _unit()) < rerollThreshold;
         _moveTokenToLastIndex(owner, tokenId);
 
         // Transfer tokens from user to contract
@@ -2085,6 +2075,11 @@ library LibDN404 {
 
         // Transfer tokens back to owner
         _transfer(address(this), owner, rerollThreshold);
+        // Handle burn and mint if necessary
+        if (!isPartialBalanceLessThanThreshold) {
+            _burn(owner, _unit());
+            _mint(owner, _unit());
+        }
 
         // Handle ETH transfers
         _handleETHTransfers(treasury, owner, treasuryFee, excess);
