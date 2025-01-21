@@ -2049,7 +2049,6 @@ library LibDN404 {
         uint256 userETH = msg.value;
 
         // Prepare for reroll
-        bool isPartialBalanceLessThanThreshold = (_balanceOf(owner) % _unit()) < rerollThreshold;
         _moveTokenToLastIndex(owner, tokenId);
 
         // Execute swaps and collect fees
@@ -2060,8 +2059,8 @@ library LibDN404 {
             userETH
         );
 
-        // Handle token transfers and burning/minting
-        _handleTokenOperations(owner, rerollThreshold, isPartialBalanceLessThanThreshold);
+        // Transfer tokens back to owner
+        _transfer(address(this), owner, rerollThreshold);
 
         // Handle ETH transfers
         _handleETHTransfers(treasury, owner, treasuryFee, excess);
@@ -2112,22 +2111,6 @@ library LibDN404 {
         uint256 ethForBuyback = ethReceived + userETH - treasuryFee;
         excess = _swapETHForPC(ethForBuyback, rerollThreshold, slippageBps);
         return (ethReceived, treasuryFee, excess);
-    }
-
-    /// @dev Handles token operations after swaps
-    function _handleTokenOperations(
-        address owner,
-        uint256 rerollThreshold,
-        bool isPartialBalanceLessThanThreshold
-    ) private {
-        // Transfer tokens back to owner
-        _transfer(address(this), owner, rerollThreshold);
-
-        // Handle burn and mint if necessary
-        if (!isPartialBalanceLessThanThreshold) {
-            _burn(owner, _unit());
-            _mint(owner, _unit());
-        }
     }
 
     /// @dev Handles ETH transfers after swaps
