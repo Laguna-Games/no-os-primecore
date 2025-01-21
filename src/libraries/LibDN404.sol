@@ -2051,13 +2051,11 @@ library LibDN404 {
         // Prepare for reroll
         _moveTokenToLastIndex(owner, tokenId);
 
+        // Transfer tokens from user to contract
+        _transfer(owner, address(this), rerollThreshold);
+
         // Execute swaps and collect fees
-        (, /*uint256 ethReceived*/ uint256 treasuryFee, uint256 excess) = _executeRerollSwaps(
-            owner,
-            rerollThreshold,
-            slippageBps,
-            userETH
-        );
+        (uint256 treasuryFee, uint256 excess) = _executeRerollSwaps(rerollThreshold, slippageBps, userETH);
 
         // Transfer tokens back to owner
         _transfer(address(this), owner, rerollThreshold);
@@ -2095,22 +2093,20 @@ library LibDN404 {
 
     /// @dev Executes the swap operations for reroll
     function _executeRerollSwaps(
-        address owner,
         uint256 rerollThreshold,
         uint16 slippageBps,
         uint256 userETH
-    ) private returns (uint256 ethReceived, uint256 treasuryFee, uint256 excess) {
+    ) private returns (uint256 treasuryFee, uint256 excess) {
         DN404Storage storage $ = _getDN404Storage();
-        // Transfer tokens from user to contract
-        _transfer(owner, address(this), rerollThreshold);
+
         // Execute PC to ETH swap
-        ethReceived = _swapPCForETH(rerollThreshold, slippageBps);
+        uint256 ethReceived = _swapPCForETH(rerollThreshold, slippageBps);
         // Calculate treasury fee
         treasuryFee = (ethReceived * $.treasuryFeePercentage) / 10000;
         // Execute ETH to PC swap
         uint256 ethForBuyback = ethReceived + userETH - treasuryFee;
         excess = _swapETHForPC(ethForBuyback, rerollThreshold, slippageBps);
-        return (ethReceived, treasuryFee, excess);
+        return (treasuryFee, excess);
     }
 
     /// @dev Handles ETH transfers after swaps
