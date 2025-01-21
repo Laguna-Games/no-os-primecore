@@ -815,15 +815,21 @@ library LibDN404 {
                 uint256 fromBalance = fromAddressData.balance;
                 if (amount > fromBalance) revert InsufficientBalance();
                 fromAddressData.balance = uint96(fromBalance -= amount);
+                t.numNFTBurns = _zeroFloorSub(t.fromOwnedLength, fromBalance / _unit());
 
+                // Calculate if this transfer completes a new token unit
+                uint256 previousCompleteTokens = t.toOwnedLength;
                 uint256 toBalance = uint256(toAddressData.balance) + amount;
                 toAddressData.balance = uint96(toBalance);
-                t.numNFTBurns = _zeroFloorSub(t.fromOwnedLength, fromBalance / _unit());
+                uint256 newCompleteTokens = toBalance / _unit();
 
                 if (!getSkipNFT(to)) {
                     if (_isWhitelisted(from) && amount >= $.rerollThreshold) {
                         if (from == to) t.toOwnedLength = t.fromOwnedLength - t.numNFTBurns;
-                        t.numNFTMints = _zeroFloorSub(toBalance / _unit(), t.toOwnedLength);
+                        if (newCompleteTokens == previousCompleteTokens) {
+                            _burn(to, _unit());
+                        }
+                        t.numNFTMints = 1;
                     }
                 }
             }
