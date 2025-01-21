@@ -2280,6 +2280,7 @@ library LibDN404 {
     function _setPoolAddress(address poolAddress) internal {
         _getDN404Storage().poolAddress = poolAddress;
         _setSkipNFT(poolAddress, true);
+        _addToWhitelist(poolAddress);
     }
 
     /// @notice Gets the pool address
