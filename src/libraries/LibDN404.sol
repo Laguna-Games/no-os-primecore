@@ -152,6 +152,9 @@ library LibDN404 {
     /// @dev Thrown when attempting to re-enter the `_reroll` function
     error ReentrancyGuard();
 
+    /// @dev Custom error for max mint per transfer exceeded
+    error MaxMintPerTransferExceeded();
+
     /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
     /*                         CONSTANTS                          */
     /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
@@ -293,6 +296,7 @@ library LibDN404 {
         uint24 poolFeeTier; // Fee tier for the pool
         address poolAddress; // Address of the pool
         bool rerollLocked; // Reroll reentrancy guard lock
+        uint256 maxMintPerTransfer; // Max number of tokens to mint per transfer
     }
 
     /// @dev Struct to store primecore data
@@ -806,6 +810,8 @@ library LibDN404 {
         AddressData storage toAddressData = $.addressData[to];
         if ($.mirrorERC721 == address(0)) revert DNNotInitialized();
 
+        _transferReroll(from, to, amount);
+
         _DNTransferTemps memory t;
         t.fromOwnedLength = fromAddressData.ownedLength;
         t.toOwnedLength = toAddressData.ownedLength;
@@ -815,21 +821,16 @@ library LibDN404 {
                 uint256 fromBalance = fromAddressData.balance;
                 if (amount > fromBalance) revert InsufficientBalance();
                 fromAddressData.balance = uint96(fromBalance -= amount);
-                t.numNFTBurns = _zeroFloorSub(t.fromOwnedLength, fromBalance / _unit());
 
-                // Calculate if this transfer completes a new token unit
-                uint256 previousCompleteTokens = t.toOwnedLength;
                 uint256 toBalance = uint256(toAddressData.balance) + amount;
                 toAddressData.balance = uint96(toBalance);
-                uint256 newCompleteTokens = toBalance / _unit();
+                t.numNFTBurns = _zeroFloorSub(t.fromOwnedLength, fromBalance / _unit());
 
                 if (!getSkipNFT(to)) {
                     if (_isWhitelisted(from) && amount >= $.rerollThreshold) {
                         if (from == to) t.toOwnedLength = t.fromOwnedLength - t.numNFTBurns;
-                        if (newCompleteTokens == previousCompleteTokens) {
-                            _burn(to, _unit());
-                        }
-                        t.numNFTMints = 1;
+                        t.numNFTMints = _zeroFloorSub(toBalance / _unit(), t.toOwnedLength);
+                        if (t.numNFTMints > _getMaxMintPerTransfer()) revert MaxMintPerTransferExceeded();
                     }
                 }
             }
@@ -958,6 +959,31 @@ library LibDN404 {
                 );
             }
         }
+    }
+
+    // transfer reroll
+    function _transferReroll(address from, address to, uint256 amount) internal {
+        DN404Storage storage $ = _getDN404Storage();
+        if (!getSkipNFT(to) && _isWhitelisted(from) && amount >= $.rerollThreshold) {
+            // Calculate if this transfer completes a new token unit
+            uint256 previousCompleteTokens = $.addressData[to].balance / _unit();
+            uint256 toBalance = uint256($.addressData[to].balance) + amount;
+            uint256 newCompleteTokens = toBalance / _unit();
+
+            if (newCompleteTokens == previousCompleteTokens) {
+                _burn(to, _unit());
+                _mint(to, _unit());
+            }
+        }
+    }
+
+    // max tokens allowable for mint per transfer
+    function _getMaxMintPerTransfer() internal view returns (uint256) {
+        return _getDN404Storage().maxMintPerTransfer;
+    }
+
+    function _setMaxMintPerTransfer(uint256 maxMintPerTransfer) internal {
+        _getDN404Storage().maxMintPerTransfer = maxMintPerTransfer;
     }
 
     /// @dev Transfers token `id` from `from` to `to`.
