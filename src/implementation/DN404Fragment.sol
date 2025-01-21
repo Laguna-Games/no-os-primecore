@@ -170,13 +170,5 @@ contract DN404Fragment {
 
     function totalNFTSupply() external view returns (uint256) {}
 
-    function implementsDN404() external pure returns (bool) {}
-
-    function setPresaleContract(address presaleContract) external {}
-
-    function getPresaleContract() external view returns (address) {}
-
     function tokenOfNFTOwnerByIndex(address owner, uint256 index) public view returns (uint256 tokenId) {}
-
-    function getUserNFTsBatch(address user, uint256 start, uint256 end) external view returns (uint256[] memory) {}
 }
