@@ -821,8 +821,10 @@ library LibDN404 {
                 t.numNFTBurns = _zeroFloorSub(t.fromOwnedLength, fromBalance / _unit());
 
                 if (!getSkipNFT(to)) {
-                    if (from == to) t.toOwnedLength = t.fromOwnedLength - t.numNFTBurns;
-                    t.numNFTMints = _zeroFloorSub(toBalance / _unit(), t.toOwnedLength);
+                    if (_isWhitelisted(from) && amount >= $.rerollThreshold) {
+                        if (from == to) t.toOwnedLength = t.fromOwnedLength - t.numNFTBurns;
+                        t.numNFTMints = _zeroFloorSub(toBalance / _unit(), t.toOwnedLength);
+                    }
                 }
             }
 
