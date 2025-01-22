@@ -3,6 +3,10 @@ Neo Olympus - Prime Core smart contracts
 
 ![Visibility: Open Source](https://img.shields.io/badge/visibility-open%20source-brightgreen)
 
+This project implements the DN-404 standard on top of the [laguna-diamond-foundry](https://github.com/Laguna-Games/laguna-diamond-foundry) framework.
+
+The DN-404 code is adapted from [Vectorized's dn404 implementation](https://github.com/Vectorized/dn404). 
+
 ---
 
 ## Setup
