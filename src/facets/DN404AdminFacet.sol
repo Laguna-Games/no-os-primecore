@@ -189,6 +189,19 @@ contract DN404AdminFacet {
         LibDN404._mint(to, amount);
     }
 
+    /// @notice Sets the maximum number of tokens that can be minted per transfer.
+    /// @param maxMintPerTransfer The new maximum number of tokens that can be minted per transfer.
+    function setMaxMintPerTransfer(uint256 maxMintPerTransfer) external {
+        LibContractOwner.enforceIsContractOwner();
+        LibDN404._setMaxMintPerTransfer(maxMintPerTransfer);
+    }
+
+    /// @notice Returns the maximum number of tokens that can be minted per transfer.
+    /// @return The maximum number of tokens that can be minted per transfer.
+    function getMaxMintPerTransfer() external view returns (uint256) {
+        return LibDN404._getMaxMintPerTransfer();
+    }
+
     /// @notice Retrieves NFTs owned by the specified user in batches.
     /// @param user The address of the user whose NFTs are to be retrieved.
     /// @param start The starting index of the batch.

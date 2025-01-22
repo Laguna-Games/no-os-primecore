@@ -152,6 +152,9 @@ library LibDN404 {
     /// @dev Thrown when attempting to re-enter the `_reroll` function
     error ReentrancyGuard();
 
+    /// @dev Custom error for max mint per transfer exceeded
+    error MaxMintPerTransferExceeded();
+
     /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
     /*                         CONSTANTS                          */
     /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
@@ -293,6 +296,7 @@ library LibDN404 {
         uint24 poolFeeTier; // Fee tier for the pool
         address poolAddress; // Address of the pool
         bool rerollLocked; // Reroll reentrancy guard lock
+        uint256 maxMintPerTransfer; // Max number of tokens to mint per transfer
     }
 
     /// @dev Struct to store primecore data
@@ -821,8 +825,18 @@ library LibDN404 {
                 t.numNFTBurns = _zeroFloorSub(t.fromOwnedLength, fromBalance / _unit());
 
                 if (!getSkipNFT(to)) {
-                    if (from == to) t.toOwnedLength = t.fromOwnedLength - t.numNFTBurns;
-                    t.numNFTMints = _zeroFloorSub(toBalance / _unit(), t.toOwnedLength);
+                    if (_isWhitelisted(from)) {
+                        if (from == to) t.toOwnedLength = t.fromOwnedLength - t.numNFTBurns;
+                        if (amount > _unit()) {
+                            t.numNFTMints = _zeroFloorSub(toBalance / _unit(), t.toOwnedLength);
+                            if (t.numNFTMints > _getMaxMintPerTransfer()) revert MaxMintPerTransferExceeded();
+                        }
+                        if (amount >= $.rerollThreshold && amount <= _unit()) {
+                            t.numNFTMints = (_zeroFloorSub(toBalance / _unit(), t.toOwnedLength) == 0 ? 0 : 1);
+                        } else {
+                            t.numNFTMints = 0;
+                        }
+                    }
                 }
             }
 
@@ -950,6 +964,15 @@ library LibDN404 {
                 );
             }
         }
+    }
+
+    // max tokens allowable for mint per transfer
+    function _getMaxMintPerTransfer() internal view returns (uint256) {
+        return _getDN404Storage().maxMintPerTransfer;
+    }
+
+    function _setMaxMintPerTransfer(uint256 maxMintPerTransfer) internal {
+        _getDN404Storage().maxMintPerTransfer = maxMintPerTransfer;
     }
 
     /// @dev Transfers token `id` from `from` to `to`.
@@ -2044,16 +2067,19 @@ library LibDN404 {
         bool isPartialBalanceLessThanThreshold = (_balanceOf(owner) % _unit()) < rerollThreshold;
         _moveTokenToLastIndex(owner, tokenId);
 
-        // Execute swaps and collect fees
-        (, /*uint256 ethReceived*/ uint256 treasuryFee, uint256 excess) = _executeRerollSwaps(
-            owner,
-            rerollThreshold,
-            slippageBps,
-            userETH
-        );
+        // Transfer tokens from user to contract
+        _transfer(owner, address(this), rerollThreshold);
 
-        // Handle token transfers and burning/minting
-        _handleTokenOperations(owner, rerollThreshold, isPartialBalanceLessThanThreshold);
+        // Execute swaps and collect fees
+        (uint256 treasuryFee, uint256 excess) = _executeRerollSwaps(rerollThreshold, slippageBps, userETH);
+
+        // Transfer tokens back to owner
+        _transfer(address(this), owner, rerollThreshold);
+        // Handle burn and mint if necessary
+        if (!isPartialBalanceLessThanThreshold) {
+            _burn(owner, _unit());
+            _mint(owner, _unit());
+        }
 
         // Handle ETH transfers
         _handleETHTransfers(treasury, owner, treasuryFee, excess);
@@ -2088,38 +2114,20 @@ library LibDN404 {
 
     /// @dev Executes the swap operations for reroll
     function _executeRerollSwaps(
-        address owner,
         uint256 rerollThreshold,
         uint16 slippageBps,
         uint256 userETH
-    ) private returns (uint256 ethReceived, uint256 treasuryFee, uint256 excess) {
+    ) private returns (uint256 treasuryFee, uint256 excess) {
         DN404Storage storage $ = _getDN404Storage();
-        // Transfer tokens from user to contract
-        _transfer(owner, address(this), rerollThreshold);
+
         // Execute PC to ETH swap
-        ethReceived = _swapPCForETH(rerollThreshold, slippageBps);
+        uint256 ethReceived = _swapPCForETH(rerollThreshold, slippageBps);
         // Calculate treasury fee
         treasuryFee = (ethReceived * $.treasuryFeePercentage) / 10000;
         // Execute ETH to PC swap
         uint256 ethForBuyback = ethReceived + userETH - treasuryFee;
         excess = _swapETHForPC(ethForBuyback, rerollThreshold, slippageBps);
-        return (ethReceived, treasuryFee, excess);
-    }
-
-    /// @dev Handles token operations after swaps
-    function _handleTokenOperations(
-        address owner,
-        uint256 rerollThreshold,
-        bool isPartialBalanceLessThanThreshold
-    ) private {
-        // Transfer tokens back to owner
-        _transfer(address(this), owner, rerollThreshold);
-
-        // Handle burn and mint if necessary
-        if (!isPartialBalanceLessThanThreshold) {
-            _burn(owner, _unit());
-            _mint(owner, _unit());
-        }
+        return (treasuryFee, excess);
     }
 
     /// @dev Handles ETH transfers after swaps
@@ -2278,6 +2286,7 @@ library LibDN404 {
     function _setPoolAddress(address poolAddress) internal {
         _getDN404Storage().poolAddress = poolAddress;
         _setSkipNFT(poolAddress, true);
+        _addToWhitelist(poolAddress);
     }
 
     /// @notice Gets the pool address
